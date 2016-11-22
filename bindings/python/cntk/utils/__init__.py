@@ -328,27 +328,27 @@ def sanitize_var_map(op_arguments, arguments, precision=None,
 
            * dict: keys are input variable or names, and values are the input data.
            * any other type: if node has an unique input, arguments is
-             mapped to this input.
+             mapped to this input. 
          For nodes with more than one input, only dict is allowed.
 
          In both cases, every every sample in the data will be interpreted
-         as a new sequence.
-
+         as a new sequence. 
+         
          Sequences can be marked as continuations of the same sequence in
          the previous minibatch (that is the sequence in the same slot).
          There are two possibilities for this:
-
+         
           * specifying arguments as a `tuple` where the first element is
             used as arguments and the second one will be used as a list
             of bools, denoting whether a sequence is a new one (`True`) or a
             continuation of the sequence in the same slot of the previous
-            minibatch (`False`). This will be applied to all batches.
-          * specifying arguments as a dictionary of variables to tuples
+            minibatch (`False`). This will be applied to all batches. 
+          * specifying arguments as a dictionary of variables to tuples 
             where the first element is used as arguments and the second
             one will be used as a list of bools, denoting whether a sequence
             is a new one (`True`) or a continuation of the sequence in the
             same slot of the previous minibatch (`False`). This will be
-            applied to all batches.
+            applied to all batches. 
 
          Data should be either NumPy arrays or a
          :class:`~cntk.io.MinibatchData` instance.
