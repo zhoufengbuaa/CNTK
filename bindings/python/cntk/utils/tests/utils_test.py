@@ -47,7 +47,7 @@ def test_axes():
 
     assert (Axis.default_dynamic_axis(),) == \
             sanitize_dynamic_axes(Axis.default_dynamic_axis())
-
+    
 def test_get_data_type():
     pa32 = parameter(init=np.asarray(2, dtype=np.float32))
     pa64 = parameter(init=np.asarray(2, dtype=np.float64))
@@ -119,3 +119,9 @@ def test_sanitize_batch_contiguity():
     b = sanitize_batch(var, batch)
     assert b.shape == (2,1,2,2)
 
+def test_sanitize_batch_scalar():
+    batch = 1.0
+    var = input_variable((), dtype=np.float32)
+    value = sanitize_batch(var, batch)
+    assert value.shape == ()
+    assert np.asarray(value) == AA(batch, var.dtype)

@@ -446,6 +446,9 @@ def _ones_like(batch, precision):
     Args:
         batch (list of NumPy arrays): a list of sequences, which are NumPy arrays
     '''
+    if isinstance(batch, np.ndarray) and batch.shape == ():
+        return np.ones_like(batch, dtype=sanitize_precision(precision))
+
     return [np.ones_like(sample, dtype=sanitize_precision(precision)) for sample in batch]
 
 
@@ -541,7 +544,7 @@ class Value(cntk_py.Value):
 
             # FIXME if not seq_starts: directly pass it to Value constructor
 
-            batch = list(batch)
+            batch = list(np.atleast_2d(batch))
 
         if not isinstance(batch, list):
             raise ValueError('batch has to be a list of NumPy arrays or '
@@ -790,6 +793,9 @@ def eval(op, arguments=None, precision=None, device=None, backward_pass=False, e
                           forward_output.items()}
 
         backward_output = op.backward(state, root_gradients, expected_backward)
+
+        #state, forward_output = op.forward(arguments, op.outputs, op.outputs,
+        #    device=device)
 
         return forward_output, backward_output
 
