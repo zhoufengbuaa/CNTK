@@ -387,7 +387,7 @@ class Test:
         'Quadro M2000M': 5,
         'Quadro M4000': 5,
       }
-      cc = sys.maxint
+      cc = sys.maxsize
       try:
         process = subprocess.Popen([nvidiaSmiPath, '-L'], stdout=subprocess.PIPE)
         gpuList = process.communicate()[0]
