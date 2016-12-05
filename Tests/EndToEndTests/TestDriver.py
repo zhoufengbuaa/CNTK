@@ -403,7 +403,7 @@ class Test:
               pass
       except OSError:
         pass
-      if cc != sys.maxint:
+      if cc != sys.maxsize:
         self.gpuBaselinePatternList.insert(0, ".gpu.cc" + str(cc))
 
     return self.gpuBaselinePatternList
