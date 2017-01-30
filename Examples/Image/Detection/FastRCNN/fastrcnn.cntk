@@ -50,14 +50,25 @@ Train = {
     action = "train"
     
     BrainScriptNetworkBuilder = {
-        network     = BS.Network.Load ("../../../../../PretrainedModels/AlexNet.model")
-        convLayers  = BS.Network.CloneFunction(network.features, network.conv5_y, parameters = "constant")
-        fcLayers    = BS.Network.CloneFunction(network.pool3, network.h2_d)
+        #network     = BS.Network.Load ("../../../../../PretrainedModels/AlexNet.model")
+        #convLayers  = BS.Network.CloneFunction(network.features, network.conv5_y, parameters = "constant")
+        #fcLayers    = BS.Network.CloneFunction(network.pool3, network.h2_d)
+		
+        network     = BS.Network.Load ("../../../../../PretrainedModels/VGG19_legacy.model")
+		# __v2libuid__Input2__v2libname__data
+		# __v2libuid__ReLU138__v2libname__relu5_4
+        convLayers  = BS.Network.CloneFunction(network.__v2libuid__Input2__v2libname__data, network.__v2libuid__ReLU138__v2libname__relu5_4, parameters = "constant")
+		# __v2libuid__Pooling140__v2libname__pool5
+		# or
+		# __v2libuid__Reshape144__v2libname__Reshape144
+		# __v2libuid__Dropout166__v2libname__drop7
+        #fcLayers    = BS.Network.CloneFunction(network.__v2libuid__Pooling140__v2libname__pool5, network.__v2libuid__Dropout166__v2libname__drop7)
+        fcLayers    = BS.Network.CloneFunction(network.__v2libuid__Reshape144__v2libname__Reshape144, network.__v2libuid__Dropout166__v2libname__drop7)
 
         model (features, rois) = {
             featNorm = features - 114
             convOut  = convLayers (featNorm)
-            roiOut   = ROIPooling (convOut, rois, (6:6))
+            roiOut   = ROIPooling (convOut, rois, (7:7))
             fcOut    = fcLayers (roiOut)
             W        = ParameterTensor{($NumLabels$:4096), init="glorotUniform"}
             b        = ParameterTensor{$NumLabels$, init = 'zero'}

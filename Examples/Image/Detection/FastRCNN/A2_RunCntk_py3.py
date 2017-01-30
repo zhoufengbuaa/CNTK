@@ -21,6 +21,7 @@ import os, sys
 
 ###############################################################
 ###############################################################
+make_mode = False
 abs_path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(abs_path, "..", ".."))
 
@@ -47,7 +48,7 @@ max_epochs = cntk_max_epochs
 momentum_time_constant = cntk_momentum_time_constant
 
 # model specific variables (only AlexNet for now)
-base_model = "AlexNet"
+base_model = "VGG"
 if base_model == "AlexNet":
     model_file = "../../../../../PretrainedModels/AlexNet.model"
     feature_node_name = "features"
@@ -55,6 +56,13 @@ if base_model == "AlexNet":
     pool_node_name = "pool3"
     last_hidden_node_name = "h2_d"
     roi_dim = 6
+elif base_model == "VGG":
+    model_file = "../../../../../PretrainedModels/VGG19_legacy.model"
+    feature_node_name = "data"
+    last_conv_node_name = "relu5_4"  # "z.x._.x._.x.x_output"
+    pool_node_name = "pool5"  # "z.x._.x._.x_output"
+    last_hidden_node_name = "drop7"  # "z.x_output"
+    roi_dim = 7
 else:
     raise ValueError('unknown base model: %s' % base_model)
 ###############################################################
@@ -212,7 +220,7 @@ if __name__ == '__main__':
     model_path = os.path.join(abs_path, "Output", "frcn_py.model")
 
     # Train only is no model exists yet
-    if os.path.exists(model_path):
+    if make_mode and os.path.exists(model_path):
         print("Loading existing model from %s" % model_path)
         trained_model = load_model(model_path)
     else:
