@@ -23,9 +23,12 @@ from prepare_test_data import prepare_ImageNet_data
 from ConvNet_CIFAR10_DataAug_Distributed_test import mpiexec_test
 script_under_test = os.path.join(example_dir, "AlexNet_ImageNet_Distributed.py")
 
-def test_alexnet_imagenet_distributed(device_id):
+import itertools
+
+@pytest.mark.parametrize("executionNumber, mbsize", list(itertools.product(range(50),[4,8])))
+def test_alexnet_imagenet_distributed(device_id, executionNumber, mbsize):
     params = [ "-n", "2",
-               "-m", "8", 
+               "-m", str(mbsize),
                "-e", "16",
                "-datadir", prepare_ImageNet_data(),
                "-q", "32",
