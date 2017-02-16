@@ -21,6 +21,100 @@ namespace CNTK
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
+// The class uses a fixed thread pool to execute async works to avoid thread creation in std::async
+template<size_t NumThreads>
+class AsyncFixedThreadPool
+{
+private:
+    std::deque<std::function<void()>> m_queue;
+    std::mutex m_queueMutex;
+    std::condition_variable m_wakeup;
+    std::vector<std::thread> m_threads;
+    std::atomic<bool> m_shouldExit;
+
+    void ThreadProc()
+    {
+        std::unique_lock<std::mutex> lock(m_queueMutex);
+        while (!(m_shouldExit && m_queue.empty())) // note that when m_shouldExit sets, queued works would still be finished to avoid broken promise
+        {
+            if (m_queue.empty())
+            {
+                m_wakeup.wait(lock); // release mutex and wait on signal to wake up
+            }
+            else
+            {
+                auto work = m_queue.front();
+                m_queue.pop_front();
+                lock.unlock();
+                work();
+                lock.lock();
+            }
+        }
+    }
+
+public:
+    AsyncFixedThreadPool() :
+        m_shouldExit(false)
+    {
+        for (size_t i = 0; i < NumThreads; ++i)
+        {
+            m_threads.emplace_back(std::thread(&AsyncFixedThreadPool::ThreadProc, this));
+        }
+    }
+
+    ~AsyncFixedThreadPool()
+    {
+        m_shouldExit = true;
+        m_wakeup.notify_all();
+
+        for (auto& t : m_threads) 
+        {
+            t.join();
+        }
+    }
+
+    template <typename Function>
+    auto async(Function&& f) -> std::future<decltype(f())>
+    {
+        using ReturnType = decltype(f());
+
+        if (m_shouldExit)
+        {
+            RuntimeError("Cannot run more async works when exiting");
+        }
+
+        struct PromiseFunc
+        {
+            std::promise<ReturnType> promise;
+            std::function<ReturnType()> function;
+            PromiseFunc(std::function<ReturnType()>&& f) :
+                promise(std::promise<ReturnType>()), function(f)
+            {
+            }
+        };
+
+        auto work = std::make_shared<PromiseFunc>(std::move(f));
+        auto future = work->promise.get_future();
+
+        {
+            std::lock_guard<std::mutex> lock(m_queueMutex);
+            m_queue.emplace_back(
+                [work]()
+                {
+                    try {
+                        work->promise.set_value(work->function());
+                    }
+                    catch (...) {
+                        work->promise.set_exception(std::current_exception());
+                    }
+                });
+        }
+        m_wakeup.notify_one();
+
+        return future;
+    }
+};
+
 typedef ReaderPtr (*ReaderFactory)(const ConfigParameters& parameters);
 
 template <class ElemType>
@@ -127,6 +221,25 @@ private:
     std::unordered_map<std::wstring, size_t> m_nameToStreamId;
     std::vector<StreamDescriptionPtr> m_streams;
     launch m_launchType;
+    AsyncFixedThreadPool<2> m_asyncPrefetchThreadPool;
+
+    inline void StartPrefetchTask()
+    {
+        // Starting the prefetch task. There is always a single async read in flight.
+        // When the network requests a new minibatch, we wait for the current async to finish, swap the buffers
+        // and kick off the new prefetch.
+        auto localCurrentDataTransferIndex = m_currentDataTransferIndex;
+        auto prefetchFunc = [this, localCurrentDataTransferIndex]() { return PrefetchMinibatch(localCurrentDataTransferIndex); };
+        if (m_launchType == std::launch::async)
+        {
+            // use fixed thread pool for async prefetch to avoid thread creation which causes Philly perf drop
+            m_prefetchTask = m_asyncPrefetchThreadPool.async(prefetchFunc);
+        }
+        else
+        {
+            m_prefetchTask = std::async(m_launchType, prefetchFunc);
+        }
+    }
 
     // Data structure required for prefetch.
     struct StreamPrefetchBuffer
