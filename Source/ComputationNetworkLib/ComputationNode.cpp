@@ -159,11 +159,13 @@ template<class ElemType>
 /*static*/ void ComputationNode<ElemType>::BroadcastToPacked(const Matrix<ElemType>& dataToBroadcast,
                                                              const MBLayoutPtr& inputLayout,
                                                              Matrix<ElemType>& broadcastTo,
-                                                             const MBLayoutPtr& targetLayout,
+                                                             const FrameRange& targetFrameRange,
                                                              const std::shared_ptr<Matrix<ElemType>>& tempIndicesStorage)
 {
+    auto targetLayout = targetFrameRange.m_pMBLayout;
+    
     // Generate the gather indices
-    std::vector<ElemType> gatherIndicesVector(targetLayout->GetNumCols(), -1);
+    std::vector<ElemType> gatherIndicesVector(broadcastTo.GetNumCols(), -1);
     auto& layoutSequences = targetLayout->GetAllSequences();
     int numLayoutSequences = (int)layoutSequences.size();
 
@@ -175,11 +177,18 @@ template<class ElemType>
     for (int layoutSequenceIdx = 0; layoutSequenceIdx < numLayoutSequences; ++layoutSequenceIdx)
     {
         auto sequenceInfo = layoutSequences[layoutSequenceIdx];
-        if (sequenceInfo.seqId != GAP_SEQUENCE_ID)
+
+        if ((sequenceInfo.seqId != GAP_SEQUENCE_ID) && 
+            (targetFrameRange.IsAllFrames() || ((sequenceInfo.tBegin <= (ptrdiff_t)(targetFrameRange.timeIdxInSeq + targetFrameRange.m_timeOffset)) && (sequenceInfo.tEnd > (targetFrameRange.timeIdxInSeq + targetFrameRange.m_timeOffset)))))
         {
             auto srcSequenceInfo = inputLayout->FindSequence(sequenceInfo.seqId);
             auto gatherFromIndex = inputLayout->GetColumnIndex(srcSequenceInfo, 0);
-            auto currentSequenceColumnIndices = targetLayout->GetColumnIndices(sequenceInfo);
+            std::vector<size_t> currentSequenceColumnIndices;
+            if (targetFrameRange.IsAllFrames())
+                currentSequenceColumnIndices = targetLayout->GetColumnIndices(sequenceInfo);
+            else
+                currentSequenceColumnIndices.push_back(sequenceInfo.s);
+
             for (auto i : currentSequenceColumnIndices)
                 gatherIndicesVector[i] = (ElemType)gatherFromIndex;
         }
@@ -187,9 +196,9 @@ template<class ElemType>
 
     auto gatherIdxMatrix = tempIndicesStorage;
     if (!gatherIdxMatrix)
-        gatherIdxMatrix = std::make_shared<Matrix<ElemType>>(1, targetLayout->GetNumCols(), gatherIndicesVector.data(), broadcastTo.GetDeviceId());
+        gatherIdxMatrix = std::make_shared<Matrix<ElemType>>(1, broadcastTo.GetNumCols(), gatherIndicesVector.data(), broadcastTo.GetDeviceId());
     else
-        gatherIdxMatrix->SetValue(1, targetLayout->GetNumCols(), broadcastTo.GetDeviceId(), gatherIndicesVector.data());
+        gatherIdxMatrix->SetValue(1, broadcastTo.GetNumCols(), broadcastTo.GetDeviceId(), gatherIndicesVector.data());
 
     broadcastTo.DoGatherColumnsOf(0, *gatherIdxMatrix, dataToBroadcast, 1);
 }
@@ -617,14 +626,16 @@ template <class ElemType>
 // 'transpose' means print one row per sample (non-transposed is one column per sample).
 // 'isSparse' will print all non-zero values as one row (non-transposed, which makes sense for one-hot) or column (transposed).
 template <class ElemType>
-void ComputationNode<ElemType>::WriteMinibatchWithFormatting(FILE* f, const FrameRange& fr,
+void ComputationNode<ElemType>::WriteMinibatchWithFormatting(FILE* f,
+                                                             const FrameRange& fr,
                                                              size_t onlyUpToRow, size_t onlyUpToT, bool transpose, bool isCategoryLabel, bool isSparse,
                                                              const vector<string>& labelMapping, const string& sequenceSeparator, 
                                                              const string& sequencePrologue, const string& sequenceEpilogue,
                                                              const string& elementSeparator, const string& sampleSeparator,
                                                              string valueFormatString,
                                                              bool outputGradient,
-                                                             bool onlyShowAbsSumForDense) const
+                                                             bool onlyShowAbsSumForDense,
+                                                             std::function<std::string(size_t)> getKeyById) const
 {
     // get minibatch matrix -> matData, matRows, matStride
     const Matrix<ElemType>& outputValues = outputGradient ? Gradient() : Value();
@@ -707,6 +718,8 @@ void ComputationNode<ElemType>::WriteMinibatchWithFormatting(FILE* f, const Fram
 
         if (s > 0)
             fprintfOrDie(f, "%s", sequenceSeparator.c_str());
+        if (getKeyById)
+            fprintfOrDie(f, "%s ", getKeyById(seqInfo.seqId).c_str());
         fprintfOrDie(f, "%s", seqProl.c_str());
 
         // output it according to our format specification
