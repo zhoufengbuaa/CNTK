@@ -174,30 +174,43 @@ class Value(cntk_py.Value):
 
     @staticmethod
     def _as_best_data_type(var, sample):
+        convert_to_var_dtype = False
+
         if isinstance(sample, list):
             try:
                 sample = np.asarray(sample, dtype=var.dtype)
+
+                if sample.dtype != var.dtype:
+                    raise ValueError('could not convert sample data to '
+                                     'NumPy array')
             except ValueError:
                 s = sample
-                while isinstance(s, list) and len(s)>0:
+                while isinstance(s, list) and len(s) > 0:
                     s = s[0]
                 if sparse.issparse(s):
                     raise ValueError('if you provide sparse data, every '
-                            'sequence has to be encoded as one '
-                            'csr_matrix instance. Your sequence was: \'%s\''%str(sample))
+                                     'sequence has to be encoded as one '
+                                     'csr_matrix instance. Your sequence was: '
+                                     '\'%s\'' % str(sample))
                 else:
                     raise
 
+        elif sample.dtype in (np.float32, np.float64):
             if sample.dtype != var.dtype:
-                raise ValueError('could not convert sample data to '
-                        'NumPy array')
+                convert_to_var_dtype = True
 
-        if np.issubdtype(sample.dtype, int):
-            sample = sample.astype(var.dtype)
-        elif sample.dtype not in (np.float32, np.float64):
-            raise ValueError('only integer, float32 and float64 are supported, '
-                    'you gave %s'%sample.dtype)
+        elif np.issubdtype(sample.dtype, int):
+            convert_to_var_dtype = True
+
         else:
+            raise ValueError('only integer, float32 and float64 are '
+                             'supported, you gave %s' % sample.dtype)
+
+        if convert_to_var_dtype:
+            warnings.warn('your data is of type "%s", but your input'
+                          'expects "%s". Please convert your data '
+                          'beforehand to speed up training.' %
+                          (sample.dtype, str(var.dtype)))
             sample = sample.astype(var.dtype)
 
         return sample
