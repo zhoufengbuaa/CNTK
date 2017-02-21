@@ -220,7 +220,6 @@ def _is_dense(batch):
     elif sparse.issparse(batch):
         return False
 
-    is_dense = True
     b = batch
     while isinstance(b, list):
         b = b[0]
@@ -228,6 +227,7 @@ def _is_dense(batch):
             return False
 
     return True
+
 
 def sanitize_batch(var, batch, seq_starts=None, device=None):
     '''
@@ -249,17 +249,18 @@ def sanitize_batch(var, batch, seq_starts=None, device=None):
          this value should be put on
 
     Returns:
-        :class:`~cntk.core.Value`: converted batch that can be passed to the core API
+        :class:`~cntk.core.Value`: converted batch that can be passed to the
+        core API
     '''
     if isinstance(batch, cntk_py.Value):
         if seq_starts is not None:
             raise ValueError('for directly passed Value objects sequence '
-                    'starts cannot be used yet.')
+                             'starts cannot be used yet.')
         return batch
 
-    if seq_starts and len(var.dynamic_axes)<=1:
+    if seq_starts and len(var.dynamic_axes) <= 1:
         raise ValueError('you specified sequence begin markers, but your '
-                'input_variable does not contain a sequence axis.')
+                         'input_variable does not contain a sequence axis.')
 
     if device is None:
         device = use_default_device()
@@ -270,16 +271,16 @@ def sanitize_batch(var, batch, seq_starts=None, device=None):
 
 def sanitize_value(shape, value, dtype, device):
     '''
-    Converts a given ``value`` to an :class:`~cntk.NDArrayView` object that can be passed to
-    the CNTK core.
+    Converts a given ``value`` to an :class:`~cntk.NDArrayView` object that can
+    be passed to the CNTK core.
 
     Args:
         shape (tuple): shape of the value
         value (None or value that can be cast to NumPy array): the value to
          be converted
         dtype: data type (np.float32 or np.float64)
-        device (:class:`~cntk.device.DeviceDescriptor`): device this value should be put
-         on
+        device (:class:`~cntk.device.DeviceDescriptor`): device this value
+         should be put on
 
     Returns:
         :class:`~cntk.NDArrayView` object representing ``value``
@@ -315,7 +316,7 @@ def sanitize_function(arg):
 
     if not isinstance(arg, cntk_py.Function):
         raise TypeError("Object of type %s cannot be cast to Variable" %
-                str(type(arg)))
+                        str(type(arg)))
 
     return arg
 

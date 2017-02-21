@@ -1363,8 +1363,8 @@ std::unordered_map<CNTK::StreamInformation, std::pair<CNTK::NDArrayViewPtr, CNTK
 //
 // NDMask
 //
-// FIXME ignore is ignored
 %ignore CNTK::NDMask::DataBuffer();
+
 %extend CNTK::NDMask {
     PyObject* to_ndarray() {
         std::vector<size_t> cntk_dims = (*self).Shape().Dimensions();
