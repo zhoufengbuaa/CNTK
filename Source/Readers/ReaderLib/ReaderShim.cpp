@@ -327,7 +327,9 @@ typename ReaderShim<ElemType>::PrefetchResult ReaderShim<ElemType>::PrefetchMini
     for (auto& mx : m_prefetchBuffers)
         mx.second.m_mbLayout = std::make_shared<MBLayout>();
 
+    auto profReadMinibatch = ProfilerTimeBegin();
     Minibatch minibatch = m_reader->ReadMinibatch();
+    ProfilerTimeEnd(profReadMinibatch, currentDataTransferIndex ? "PrefetchMinibatch::ReadMinibatch 1" : "PrefetchMinibatch::ReadMinibatch 0");
 
     // If there is no data we can simply return.
     if (minibatch.m_data.empty())
@@ -336,12 +338,17 @@ typename ReaderShim<ElemType>::PrefetchResult ReaderShim<ElemType>::PrefetchMini
     // Ok we have some data. Let's load it to GPU.
     // But before we need to make sure that corresponding compute has already finished from the last iteration.
 
+    auto profWaitForSync = ProfilerTimeBegin();
+
     // We need to make sure that the compute for the current transfer is finished before we start prefetch.
     if (m_dataTransferers[currentDataTransferIndex])
         m_dataTransferers[currentDataTransferIndex]->WaitForSyncPointOnAssignStreamAsync();
 
+    ProfilerTimeEnd(profWaitForSync, currentDataTransferIndex ? "PrefetchMinibatch::WaitForSync 1" : "PrefetchMinibatch::WaitForSync 0");
+
     m_getKeyById = minibatch.m_getKeyById;
 
+    auto profFillMatrix = ProfilerTimeBegin();
     for (auto& mx : m_prefetchBuffers)
     {
         size_t streamId = m_nameToStreamId[mx.first];
@@ -351,6 +358,7 @@ typename ReaderShim<ElemType>::PrefetchResult ReaderShim<ElemType>::PrefetchMini
         size_t sampleSize = m_streams[streamId]->m_sampleLayout->GetNumElements();
         FillMatrixFromStream(m_streams[streamId]->m_storageType, mx.second.m_matrix.get(), sampleSize, stream, m_dataTransferers[currentDataTransferIndex].get());
     }
+    ProfilerTimeEnd(profFillMatrix, currentDataTransferIndex ? "PrefetchMinibatch::FillMatrixFromStream 1" : "PrefetchMinibatch::FillMatrixFromStream 0");
 
     // Let's record that we started the copy, so that the main thread can wait afterwards.
     if (m_dataTransferers[currentDataTransferIndex])
