@@ -312,7 +312,7 @@ class Value(cntk_py.Value):
             warnings.warn('you provided the minibatch data as a list, but '
                           'your corresponding input variable (uid "%s") has '
                           'only one dynamic axis (batch axis). To speed up '
-                          'graph executen, please convert the data '
+                          'graph execution, please convert the data '
                           'beforehand into one NumPy array to speed up '
                           ' training.' % var.uid)
 
@@ -485,3 +485,57 @@ def user_function(user_func):
     '''
     from . import as_composite
     return as_composite(user_func)
+
+def asarray(var, data):
+    num_dyn_axes = len(var.dynamic_axes)
+
+    from cntk.ops import times, input_variable
+    import scipy.sparse as sparse
+
+    if data.is_sparse():
+        if num_dyn_axes != 2:
+            if data.mask.shape != ():
+                raise ValueError('data cannot have more than one dynamic axis '
+                                 ' since variable only has batch axis as dynamic axis')
+
+        vector_dim = data.shape[-1]
+        temp_input = input_variable(vector_dim)
+        dense_data = times(temp_input, np.eye(vector_dim)).eval({temp_input: data}, data.device())
+        array_to_return = [sparse.csr_matrix(seq) for seq in dense_data]
+
+    else:
+        data_array = np.asarray(data)
+
+        array_to_return = []
+        if num_dyn_axes == 2:
+            if len(data_array.shape) == 2:
+                data_array = data_array[np.newaxis,:]
+            if data.mask.shape == ():
+                if len(data_array.shape) == 1:
+                    return [[data_array]]
+
+                for batch in data_array:
+                    array_to_return.append([seq for seq in batch])
+            else:
+                for batch_idx, batch in enumerate(data_array):
+                    array_to_return.append([seq for idx, seq in enumerate(batch) if data.mask[batch_idx][idx] != cntk_py.MaskKind_Invalid])
+        elif num_dyn_axes == 1:
+            var_axes = len(var.shape) + num_dyn_axes
+            if len(data_array.shape) > var_axes and data_array.shape[1] != 1:
+                raise ValueError('shape of data exceeds number of '
+                                 'axes of variable')
+            if len(data_array.shape) == var_axes:
+                array_to_return = [batch for batch in data_array]
+            else:
+                array_to_return = [batch[0] for batch in data_array]
+        else:
+            if len(data_array.shape) > (len(var.shape) + 1):
+                raise ValueError('data should have no more than the number of static axes '
+                                 'of the variable plus one, since variable has no dynamic axis')
+            array_to_return = data_array
+
+    return array_to_return
+
+def asvalue(var, data):
+    from cntk.internal.sanitize import sanitize_batch
+    return sanitize_batch(var,data)
