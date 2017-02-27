@@ -33,10 +33,10 @@ def _dense_value_to_ndarray_test(data, num_of_dynamic_axes, expected_value_shape
     # conversion value -> array
     dense_result = asarray(var, val)
 
-    if num_of_dynamic_axes == 0:
-        result_shapes = dense_result.shape
-    else:
+    if isinstance(data, list):
         result_shapes = [AA(v).shape for v in dense_result]
+    else:
+        result_shapes = dense_result.shape
 
     assert result_shapes == expected_array_shapes
 
@@ -70,17 +70,17 @@ DENSE_CONFIGURATIONS = [
       test_array], 2, (2, 1, 5), [(1,5), (1,5)]),
     ([[test_array],
       [test_array]], 2, (2, 1, 5), [(1,5), (1,5)]),
-    (test_array, 2, (5,), [(1, 5)]),
-    (AA([test_numbers], dtype=np.float32), 2, (1,5), [(1,5)]),
-    (AA([test_numbers, test_numbers], dtype=np.float32), 2, (2,5), [(2,5)]),
+    (test_array, 2, (5,), (5,)),
+    (AA([test_numbers], dtype=np.float32), 2, (1,5), (1,5)),
+    (AA([test_numbers, test_numbers], dtype=np.float32), 2, (2,5), (2,5)),
     ([test_array,
-      test_array], 1, (2,1,5), [(5,), (5,)]),
+      test_array], 1, (2,1,5), [(1,5), (1,5)]),
     ([[test_array],
-      [test_array]], 1, (2,1,5),[(5,), (5,)]),
-    (AA([test_numbers], dtype=np.float32), 1, (1,5), [(5,)]),
-    (AA([test_numbers, test_numbers], dtype=np.float32), 1, (2,5), [(5,), (5,)]),
+      [test_array]], 1, (2,1,5), [(1,5), (1,5)]),
+    (AA([test_numbers, test_numbers], dtype=np.float32), 1, (2,5), (2,5)),
+    (AA([test_numbers], dtype=np.float32), 1, (1,5), (1,5)),
     ([test_array,
-      test_array], 0, (2,5), (2,5)),
+      test_array], 0, (2,5), [(5,), (5,)]),
     (AA([test_numbers, test_numbers], dtype=np.float32), 0, (2,5), (2,5)),
     (test_array, 0, (5,), (5,)),
 ]
@@ -111,9 +111,11 @@ def test_sparse_value_to_csr(data, num_of_dynamic_axes, expected_value_shape, ex
 DENSE_FAILING_CONFIGURATIONS = [
     # (dense data, num_of_dynamic_axes, expected_value_shape, expected_array_shapes)
     ([[test_array],
-      [test_array]], 0, (2, 1, 5), [(5,),(5,)]),
+      [test_array]], 0, (2, 1, 5), [(1, 5),(1, 5)]),
+    # currently not failing
     ([[test_array],
       [test_array, test_array]], 1, (2,2,5), [(1,5),(2,5)]),
+    # currently not failing
     ([[test_array],
      [test_array, test_array]], 0, (2,2,5), [(1,5),(2,5)]),
 ]
@@ -121,14 +123,15 @@ DENSE_FAILING_CONFIGURATIONS = [
 SPARSE_FAILING_CONFIGURATIONS = [
     # (sparse data, num_of_dynamic_axes, expected_value_shape, expected_array_shapes)
     (csr([[1,0,2], [2,3,0]]), 2, (1, 3), [(1,3)]),
-    ([csr([[1,0,2], [2,3,0]]),
-      csr([5,0,1])], 1, (2, 2, 3), [(2,3),(1,3)]),
     (csr([[1,0,2],[2,3,4]]), 2, (2, 1, 3), [(1,3),(1,3)]),
     (csr([[1,0,2], [2,3,0]]), 1, (1, 3), [(1,3)]),
     ([csr([[1,0,2],[2,3,4]])], 0, (1, 2, 3), [(2,3)]),
     ([csr([[1,0,2], [2,3,0]]),
       csr([5,0,1])], 0, (2, 2, 3), [(2,3),(1,3)]),
     ([csr([1,0,2])], 0, (1, 3), [(1,3)]),
+    # currently not failing
+    ([csr([[1,0,2], [2,3,0]]),
+      csr([5,0,1])], 1, (2, 2, 3), [(2,3),(1,3)]),
 ]
 
 @pytest.mark.parametrize("data, num_of_dynamic_axes, expected_value_shape, expected_array_shapes", DENSE_FAILING_CONFIGURATIONS)

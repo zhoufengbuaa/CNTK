@@ -158,25 +158,17 @@ def _add_tensor_ops(klass):
 class ArrayMixin(object):
     @property
     def __array_interface__(self):
-        try:
-            # This checks for a MinibatchData object.
+        import cntk
+        if isinstance(self, (cntk.cntk_py.Constant, cntk.cntk_py.Parameter, cntk.cntk_py.MinibatchData)):
             np_array = self.value
-        except AttributeError:
-            try:
-                # This checks for a Value object (core type). Trying with self.to_ndarray first would lead to
-                # a infinite recursion, since Value has a to_ndarray method
-                np_array = self.data.to_ndarray()
-            except AttributeError:
-                try:
-                    # This checks for a Value object (swig type)
-                    np_array = self.data().to_ndarray()
-                except AttributeError:
-                    try:
-                        np_array = self.to_ndarray()
-                    except AttributeError:
-                        # Ideally an exception would be raised here, but getattr would swallow it
-                        # so we return None
-                        return None
+        elif isinstance(self, cntk.core.Value):
+            np_array = self.data.to_ndarray()
+        elif isinstance(self, cntk.cntk_py.Value):
+            np_array = self.data().to_ndarray()
+        elif isinstance(self, (cntk.cntk_py.NDArrayView, cntk.cntk_py.NDMask)):
+            np_array = self.to_ndarray()
+        else:
+            return None
 
         interface_copy = np_array.__array_interface__
 
