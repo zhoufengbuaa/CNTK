@@ -163,16 +163,20 @@ class ArrayMixin(object):
             np_array = self.value
         except AttributeError:
             try:
-                # This checks for a Value object. Trying with self.to_ndarray first would lead to
+                # This checks for a Value object (core type). Trying with self.to_ndarray first would lead to
                 # a infinite recursion, since Value has a to_ndarray method
-                np_array = self.data().to_ndarray()
+                np_array = self.data.to_ndarray()
             except AttributeError:
                 try:
-                    np_array = self.to_ndarray()
+                    # This checks for a Value object (swig type)
+                    np_array = self.data().to_ndarray()
                 except AttributeError:
-                    # Ideally an exception would be raised here, but getattr would swallow it
-                    # so we return None
-                    return None
+                    try:
+                        np_array = self.to_ndarray()
+                    except AttributeError:
+                        # Ideally an exception would be raised here, but getattr would swallow it
+                        # so we return None
+                        return None
 
         interface_copy = np_array.__array_interface__
 

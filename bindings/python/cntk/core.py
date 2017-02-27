@@ -498,7 +498,7 @@ def asarray(var, data):
                 raise ValueError('data cannot have more than one dynamic axis '
                                  ' since variable only has batch axis as dynamic axis')
 
-        vector_dim = data.shape[-1]
+        vector_dim = var.shape[-1]
         temp_input = input_variable(vector_dim)
         dense_data = times(temp_input, np.eye(vector_dim)).eval({temp_input: data}, data.device())
         array_to_return = [sparse.csr_matrix(seq) for seq in dense_data]
@@ -510,25 +510,29 @@ def asarray(var, data):
         if num_dyn_axes == 2:
             if len(data_array.shape) == 2:
                 data_array = data_array[np.newaxis,:]
+
             if data.mask.shape == ():
                 if len(data_array.shape) == 1:
                     return [[data_array]]
 
                 for batch in data_array:
                     array_to_return.append([seq for seq in batch])
-            else:
+
+            else: # sequences of different lengts (i.e. with mask)
                 for batch_idx, batch in enumerate(data_array):
                     array_to_return.append([seq for idx, seq in enumerate(batch) if data.mask[batch_idx][idx] != cntk_py.MaskKind_Invalid])
+
         elif num_dyn_axes == 1:
             var_axes = len(var.shape) + num_dyn_axes
             if len(data_array.shape) > var_axes and data_array.shape[1] != 1:
-                raise ValueError('shape of data exceeds number of '
-                                 'axes of variable')
+                raise ValueError('shape of data exceeds number of axes of variable')
+
             if len(data_array.shape) == var_axes:
                 array_to_return = [batch for batch in data_array]
             else:
                 array_to_return = [batch[0] for batch in data_array]
-        else:
+
+        else: # case with no dynamic_axes
             if len(data_array.shape) > (len(var.shape) + 1):
                 raise ValueError('data should have no more than the number of static axes '
                                  'of the variable plus one, since variable has no dynamic axis')
