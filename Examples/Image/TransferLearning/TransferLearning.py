@@ -78,10 +78,10 @@ def create_model(base_model_file, feature_node_name, last_hidden_node_name, num_
         CloneMethod.freeze if freeze else CloneMethod.clone,
         {feature_node: Placeholder(name='features')})
 
-    # Add new dense layer for class prediction
+    # Add new dense layer with softmax activation for class prediction
     feat_norm  = input_features - Constant(114)
     cloned_out = cloned_layers(feat_norm)
-    z          = Dense(num_classes, activation=None, name=new_output_node_name) (cloned_out)
+    z          = Dense(num_classes, activation=softmax, name=new_output_node_name) (cloned_out)
 
     return z
 
@@ -155,10 +155,7 @@ def eval_single_image(loaded_model, image_path, image_width, image_height):
     # compute model output
     arguments = {loaded_model.arguments[0]: [hwc_format]}
     output = loaded_model.eval(arguments)
-
-    # return softmax probabilities
-    sm = softmax(output[0, 0])
-    return sm.eval()
+    return output[0,0]
 
 
 # Evaluates an image set using the provided model
