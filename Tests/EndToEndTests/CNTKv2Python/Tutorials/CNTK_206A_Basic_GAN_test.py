@@ -24,5 +24,5 @@ def test_cntk_206A_basic_gan_evalCorrect(nb, device_id):
     assert len(testCell) == 1
     m = re.match(r"Training loss of the generator is: (?P<actualEvalError>\d+\.\d+)\r?$", testCell[0].outputs[0]['text'])
     
-    assert (float(m.group('actualEvalError')) > expectedEvalErrorByDeviceId[device_id]) 
+    assert (float(m.group('actualEvalError')) < expectedEvalErrorByDeviceId[device_id]) 
   

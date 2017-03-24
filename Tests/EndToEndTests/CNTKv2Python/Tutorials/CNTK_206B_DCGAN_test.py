@@ -25,4 +25,4 @@ def test_cntk_206B_dcgan_evalCorrect(nb):
                 if cell.cell_type == 'code' and re.search('# Print the generator loss', cell.source)]
     assert len(testCell) == 1
     m = re.match(r"Training loss of the generator is: (?P<actualEvalError>\d+\.\d+)\r?$", testCell[0].outputs[0]['text'])
-    assert (float(m.group('actualEvalError')) > expectedEvalError) 
+    assert (float(m.group('actualEvalError')) < expectedEvalError) 
