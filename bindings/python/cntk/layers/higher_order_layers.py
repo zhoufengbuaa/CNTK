@@ -141,7 +141,7 @@ def For(what_range, constructor, name=''):
      constructor (Python function/lambda with 1 or 0 arguments): lambda that constructs a layer
 
     Returns:
-        cntk.ops.functions.Function: 
+        cntk.ops.functions.Function:
         A function that accepts one argument and applies the layers as constructed by ``constructor`` one after another.
     '''
     # Python 2.7 support requires us to use getargspec() instead of inspect
@@ -174,6 +174,21 @@ def SequentialClique(functions, name=''):
     Layer factory function to create a composite that applies a sequence of or any functions onto an input,
     with skip connections between all function. I.e. each function receives a sum of the input and all
     prior functions' outputs.
+
+    Example:
+     >>> from cntk.layers import *
+     >>> from cntk.ops import abs, sqrt, square
+     >>> x = input(2)
+     >>> seq_clique = SequentialClique([abs, sqrt, square])
+     >>> seq_clique(x).eval(np.array([2, 8], np.float32))
+         array([[  36.,  400.]], dtype=float32)
+
+    Args:
+     functions (single or list of :class:`~cntk.ops.functions.Function`): functions to be applied.
+
+    Returns:
+        cntk.ops.functions.Function:
+        A function that accepts one argument and apply the sequence of functions.
     '''
     def clique(x):
         for f in functions:
@@ -207,7 +222,7 @@ def ResNetBlock(f, name=''):
        the function to add the skip connection to.
 
     Returns:
-        cntk.ops.functions.Function: 
+        cntk.ops.functions.Function:
         A function that accepts one argument, applies ``f`` to it, and adds the original argument.
     '''
     def skip(x):
