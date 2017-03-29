@@ -9,18 +9,16 @@ import numpy as np
 import os
 from PIL import Image
 from cntk.device import try_set_default_device, gpu
-from cntk import load_model, placeholder, Constant
-from cntk import Trainer, UnitType
-from cntk.logging.graph import find_by_name, get_node_outputs
+from cntk import load_model, placeholder, Constant, Trainer, UnitType
 from cntk.io import MinibatchSource, ImageDeserializer, StreamDefs, StreamDef
 import cntk.io.transforms as xforms
-from cntk.layers import Dense
+from cntk.layers import Dense, Placeholder, Constant, Input
 from cntk.learners import momentum_sgd, learning_rate_schedule, momentum_schedule
-from cntk.ops import input, combine, softmax
-from cntk.ops.functions import CloneMethod
 from cntk.losses import cross_entropy_with_softmax
 from cntk.metrics import classification_error
 from cntk.logging import log_number_of_parameters, ProgressPrinter
+from cntk.logging.graph import find_by_name, get_node_outputs
+from cntk.train.training_session import *
 
 
 ################################################
@@ -98,8 +96,8 @@ def train_model(base_model_file, feature_node_name, last_hidden_node_name,
 
     # Create the minibatch source and input variables
     minibatch_source = create_mb_source(train_map_file, image_width, image_height, num_channels, num_classes)
-    image_input = input((num_channels, image_height, image_width))
-    label_input = input(num_classes)
+    image_input = Input((num_channels, image_height, image_width))
+    label_input = Input(num_classes)
 
     # Define mapping from reader streams to network inputs
     input_map = {
@@ -122,16 +120,15 @@ def train_model(base_model_file, feature_node_name, last_hidden_node_name,
     # Get minibatches of images and perform model training
     print("Training transfer learning model for {0} epochs (epoch_size = {1}).".format(num_epochs, epoch_size))
     log_number_of_parameters(tl_model)
-    for epoch in range(num_epochs):       # loop over epochs
-        sample_count = 0
-        while sample_count < epoch_size:  # loop over minibatches in the epoch
-            data = minibatch_source.next_minibatch(min(mb_size, epoch_size-sample_count), input_map=input_map)
-            trainer.train_minibatch(data)                                    # update model with it
-            sample_count += trainer.previous_minibatch_sample_count          # count samples processed so far
-            if sample_count % (100 * mb_size) == 0:
-                print ("Processed {0} samples".format(sample_count))
 
-        trainer.summarize_training_progress()
+    training_session(
+        trainer=trainer,
+        mb_source = minibatch_source,
+        mb_size = mb_size,
+        var_to_stream = input_map,
+        max_samples = epoch_size * max_epochs,
+        progress_frequency = epoch_size
+    ).train()
 
     return tl_model
 
