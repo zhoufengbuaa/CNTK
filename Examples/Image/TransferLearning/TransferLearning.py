@@ -5,14 +5,12 @@
 # ==============================================================================
 
 from __future__ import print_function
-import numpy as np
 import os
 from PIL import Image
-from cntk.device import try_set_default_device, gpu
-from cntk import load_model, placeholder, Constant, Trainer, UnitType
+from cntk import *
 from cntk.io import MinibatchSource, ImageDeserializer, StreamDefs, StreamDef
-import cntk.io.transforms as xforms
-from cntk.layers import Dense, Placeholder, Constant, Input
+from cntk.io.transforms import scale
+from cntk.layers import Dense
 from cntk.learners import momentum_sgd, learning_rate_schedule, momentum_schedule
 from cntk.losses import cross_entropy_with_softmax
 from cntk.metrics import classification_error
@@ -59,7 +57,7 @@ _num_classes = 102
 
 # Creates a minibatch source for training or testing
 def create_mb_source(map_file, image_width, image_height, num_channels, num_classes, randomize=True):
-    transforms = [xforms.scale(width=image_width, height=image_height, channels=num_channels, interpolations='linear')] 
+    transforms = [scale(width=image_width, height=image_height, channels=num_channels, interpolations='linear')]
     return MinibatchSource(ImageDeserializer(map_file, StreamDefs(
             features =StreamDef(field='image', transforms=transforms),
             labels   =StreamDef(field='label', shape=num_classes))),
@@ -96,8 +94,8 @@ def train_model(base_model_file, feature_node_name, last_hidden_node_name,
 
     # Create the minibatch source and input variables
     minibatch_source = create_mb_source(train_map_file, image_width, image_height, num_channels, num_classes)
-    image_input = Input((num_channels, image_height, image_width))
-    label_input = Input(num_classes)
+    image_input = input((num_channels, image_height, image_width))
+    label_input = input(num_classes)
 
     # Define mapping from reader streams to network inputs
     input_map = {
