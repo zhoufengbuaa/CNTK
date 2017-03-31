@@ -38,3 +38,7 @@ python Scripts/uci2ctf.py --input_file Examples/Image/MNIST/Data/Train-28x28.txt
 - `num_labels` - number of possible label values (labelDim parameter in the UCIFastReader config)
 - `output_file` - path and filename of the resulting dataset.
 
+## CNTK model2cntk
+
+model2cntk is a toolset for fast integrating Caffe models and training recipes into CNTK formats, see [here](./model2cntk/README.md)
+

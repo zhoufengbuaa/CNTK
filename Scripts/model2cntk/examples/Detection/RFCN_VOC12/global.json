@@ -1,0 +1,26 @@
+{
+	"SourceSolver" : {
+	    "Source": "Caffe",
+	    "ModelPath": "./deploy.prototxt",
+	    "WeightsPath": "./ResNet-101L_OHEM_res3a.caffemodel",
+    	"PHASE": 1
+	},
+	"ValidSolver": {
+		"SavePath": "./Valid",
+		"ValInputs": {
+			"data": [[0, 255], []],
+			"rois": [[0.1, 0.1, 0.7, 0.7], [0, 22.4, 22.4, 179.2, 179.2]]
+		},
+		"ValNodes": {
+			"cls_prob": "cls_prob",
+			"ave_bbox_pred_rois": "bbox_pred"
+		}
+	},
+    "ModelSolver": {
+    	"CNTKModelPath": "./RFCN_VOC12.cntkmodel",
+    	"CNTKTensor": {
+    		"data": [3, 224, 224],
+    		"rois": [1, 4]
+    	}
+    }
+}
