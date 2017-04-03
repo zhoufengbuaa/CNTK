@@ -11,8 +11,7 @@ from cntk import load_model
 from cntk.ops import combine
 from cntk.io import MinibatchSource, CTFDeserializer, StreamDef, StreamDefs
 from PIL import Image
-from cntk import graph
-
+from cntk.logging.graph import find_by_name
 
 # Paths relative to current python file.
 abs_path   = os.path.dirname(os.path.abspath(__file__))
@@ -50,7 +49,7 @@ def save_as_png(val_array, img_file_name, dim=28):
 
 
 if __name__ == '__main__':
-    use_brain_script_model = True
+    use_brain_script_model = False
     num_objects_to_eval = 5
 
     if (use_brain_script_model):
@@ -64,9 +63,9 @@ if __name__ == '__main__':
         model_file_name = "07_Deconvolution_PY.model"
         encoder_output_file_name = "encoder_output_PY.txt"
         decoder_output_file_name = "decoder_output_PY.txt"
-        enc_node_name = "Pooling27"
-        input_node_name = "ElementTimes4"
-        output_node_name = "Convolution53"
+        enc_node_name = "pool1"
+        input_node_name = "scaled_input"
+        output_node_name = "deconv1"
 
     # define location of output, model and data and check existence
     output_path = os.path.join(abs_path, "Output")

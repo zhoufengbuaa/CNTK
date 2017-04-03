@@ -33,14 +33,15 @@ def deconv_mnist(max_epochs=3):
 
     # Input variable and normalization
     input_var = cntk.ops.input((num_channels, image_height, image_width), np.float32)
-    scaled_input = cntk.ops.element_times(cntk.ops.constant(0.00390625), input_var)
+    scaled_input = cntk.ops.element_times(cntk.ops.constant(0.00390625), input_var, name="scaled_input")
 
     # Define the auto encoder model
     cMap = 1
-    conv1   = cntk.layers.Convolution2D  ((5,5), cMap, pad=True, activation=cntk.ops.relu)(scaled_input)
-    pool1   = cntk.layers.MaxPooling   ((4,4), (4,4))(conv1)
-    unpool1 = cntk.layers.MaxUnpooling ((4,4), (4,4))(pool1, conv1)
-    z       = cntk.layers.ConvolutionTranspose2D((5,5), num_channels, pad=True, bias=False, init=cntk.glorot_uniform(0.001))(unpool1)
+    conv1   = cntk.layers.Convolution2D  ((5,5), cMap, pad=True, activation=cntk.ops.relu, name="conv1")(scaled_input)
+    pool1   = cntk.layers.MaxPooling   ((4,4), (4,4), name="pool1")(conv1)
+    unpool1 = cntk.layers.MaxUnpooling ((4,4), (4,4), name="unpool1")(pool1, conv1)
+    z       = cntk.layers.ConvolutionTranspose2D((5,5), num_channels, pad=True, bias=False,
+                                                 init=cntk.glorot_uniform(0.001), name="deconv1")(unpool1)
 
     # define rmse loss function (should be 'err = cntk.ops.minus(deconv1, scaled_input)')
     f2        = cntk.ops.element_times(cntk.ops.constant(0.00390625), input_var)
