@@ -5,9 +5,12 @@
 # ==============================================================================
 
 import numpy as np
-from cntk import *
-from cntk.layers import *
-from cntk.layers.typing import *
+from cntk import Axis, input, reshape, sigmoid, element_max, Function, Constant, greater, default_options, default_options_for, \
+                 get_default_override, default_override_or
+from cntk.layers import BlockFunction, Convolution, Convolution1D, Convolution2D, Convolution3D, Dense, Embedding, Fold, For, \
+                        MaxPooling, MaxUnpooling, LSTM, GRU, RNNUnit, Sequential, Stabilizer, Dropout, Recurrence, \
+                        RecurrenceFrom, LayerNormalization, ConvolutionTranspose
+from cntk.layers.typing import Sequence, Signature, Tensor, SequenceOver
 
 import pytest
 
@@ -18,16 +21,21 @@ def test_layers_name():
     from cntk import placeholder
     I = placeholder(name='input')
     p = Dense(10, name='dense10')(I)
+
+    assert(p.name == 'dense10')
     assert(I.name == 'input')
     assert(p.root_function.name == 'dense10')
 
     q = Convolution((3, 3), 3, name='conv33')(I)
+    assert(q.name == 'conv33')
     assert(q.root_function.name == 'conv33')
 
     e = Embedding(0, name='emb')(I)
+    assert(e.name == 'emb')
     assert(e.root_function.name == 'emb')
 
     e = Embedding(0, name='')(I)
+    assert(e.name == '')
     assert(e.root_function.name == '')
 
 def assert_list_of_arrays_equal(r, exp, err_msg):
@@ -238,7 +246,9 @@ RECURRENT_BLOCK_DATA = [ # block_type, block_outputs_count, block_size, W_mult, 
 def test_recurrent_block(block_type, block_outputs_count, block_size, W_mult, H_mult, expected_res):
     input_shape = 4
 
-    y = Input(input_shape)
+    sequenceAxis = Axis('sequenceAxis')
+
+    y = input(input_shape, dynamic_axes=[Axis.default_batch_axis(), sequenceAxis])
     data = np.reshape(np.arange(0,16, dtype=np.float32), (1,4,4))
 
     rnn_block = block_type(block_size, init=0.1)
@@ -702,6 +712,17 @@ def test_layers_dropout():
 
     np.testing.assert_array_almost_equal(res, expected_res, decimal=7, \
         err_msg="Error in dropout computation")
+
+    z = Dropout(keep_prob=0.25, name='bar')(p)
+    res =  z(y).eval({y: dat})
+    np.testing.assert_array_almost_equal(res, expected_res, decimal=7, \
+        err_msg="Error in dropout computation with keep_prob")
+
+    with pytest.raises(ValueError):
+        z = Dropout(keep_prob=-1.5, name='bar')(p)
+
+    with pytest.raises(ValueError):
+        z = Dropout(1.5, name='bar')(p)
 
 ##########################################################
 # Test for Stabilizer

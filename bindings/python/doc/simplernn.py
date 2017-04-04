@@ -9,9 +9,6 @@ from cntk import input, cross_entropy_with_softmax, \
 from cntk.logging import ProgressPrinter
 from cntk.layers import Sequential, Embedding, Recurrence, LSTM, Dense
 
-abs_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(abs_path, "..", "..", "..", "Examples", "common"))
-
 # Creates the reader
 def create_reader(path, is_training, input_dim, label_dim):
     return MinibatchSource(CTFDeserializer(path, StreamDefs(

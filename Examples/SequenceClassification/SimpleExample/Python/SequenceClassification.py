@@ -15,9 +15,6 @@ from cntk.logging import ProgressPrinter
 from cntk.losses import cross_entropy_with_softmax
 from cntk.metrics import classification_error
 
-abs_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(abs_path, "..", "..", "..", "common"))
-
 from cntk.layers import Sequential, Embedding, Recurrence, LSTM, Dense
 
 # Creates the reader

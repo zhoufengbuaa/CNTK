@@ -147,12 +147,18 @@ def For(what_range, constructor, name=''):
     # Python 2.7 support requires us to use getargspec() instead of inspect
     from inspect import getargspec
     takes_arg = len(getargspec(constructor).args) > 0
+
+    from types import FunctionType
+    if type(constructor) != FunctionType:
+        raise ValueError("constructor must be a Python function/lambda")
+
     # helper to call the layer constructor
     def call(i):
         if takes_arg:
             return constructor(i)  # takes an arg: pass it
         else:
             return constructor()   # takes no arg: call without, that's fine too
+
     layers = [call(i) for i in what_range]
     sequential = Sequential(layers)
 
@@ -171,7 +177,7 @@ def SequentialClique(functions, name=''):
     '''
     SequentialClique(functions, name='')
 
-    Layer factory function to create a composite that applies a sequence of or any functions onto an input,
+    Layer factory function to create a composite that applies a sequence of functions onto an input,
     with skip connections between all function. I.e. each function receives a sum of the input and all
     prior functions' outputs.
 
@@ -180,7 +186,7 @@ def SequentialClique(functions, name=''):
      >>> from cntk.ops import abs, sqrt, square
      >>> x = input(2)
      >>> seq_clique = SequentialClique([abs, sqrt, square])
-     >>> seq_clique(x).eval(np.array([2, 8], np.float32))
+     >>> seq_clique(x).eval(np.array([2, 8], np.float32)) # 400 = square((8 + abs(8)) + sqrt(8 + abs(8)))
          array([[  36.,  400.]], dtype=float32)
 
     Args:
@@ -188,7 +194,7 @@ def SequentialClique(functions, name=''):
 
     Returns:
         cntk.ops.functions.Function:
-        A function that accepts one argument and apply the sequence of functions.
+        A function that accepts one argument and applies the sequence of functions.
     '''
     def clique(x):
         for f in functions:
