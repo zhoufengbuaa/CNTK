@@ -16,26 +16,7 @@ from validation import validcore
 class CntkModelAssister(object):
     @staticmethod
     def script_conversion(script_path, model_path=None, in_type='Caffe', ex_type='bs', test_dataset=None):
-        # try:
-        #     adapter_impl = adapter.ADAPTER_DICT[in_type]
-        # except KeyError:
-        #     sys.stderr.write('Un-implemented platform type\n')
-        # cntk_model_desc = adapter_impl.load_description(script_path, model_path)
-        # sys.stdout.write('begin export model script into %s format\n' % ex_type)
-        # export_path = os.path.dirname(script_path)
-        # sys.stdout.write('export %s scripts into %s\n' % (ex_type, export_path))
-        # try:
-        #     exporter_impl = exporter.EXPORTER_DICT[ex_type](cntk_model_desc)
-        # except KeyError:
-        #     sys.stderr.write('Un-implemented cntk script type\n')
-        # exporter_impl.export_scripts(export_path)
-        # sys.stdout.write('finished model exporting\n')
-        #
-        # cntk_instance = cntkinstance.CntkApiInstance(cntk_model_desc, export_path)
-        # if test_dataset is not None:
-        #     cntk_instance.eval_model(test_dataset)
-        # cntk_instance.export_model(export_path)
-        raise AssertionError('Discard for now')
+        raise AssertionError('coming soon')
 
     @staticmethod
     def convert_model(conf):

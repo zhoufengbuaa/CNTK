@@ -14,7 +14,7 @@ CAFFE_LAYER_WRAPPER = {
     'ReLU': CntkLayerType.relu,
     'Pooling': CntkLayerType.pooling,
     'Eltwise_SUM': CntkLayerType.plus,
-    'InnerProduct': CntkLayerType.dense,
+    'InnerProduct': CntkLayerType.linear,
     'Softmax': CntkLayerType.softmax,
     'Concat': CntkLayerType.splice,
     'SoftmaxWithLoss': CntkLayerType.cross_entropy_with_softmax,

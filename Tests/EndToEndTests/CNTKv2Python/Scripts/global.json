@@ -1,0 +1,12 @@
+{
+    "ClassifyEvalSolver": {
+	    "TopN": 5,
+    	"LabelTensor": [10],
+	    "IndexMap": "./test_map.txt",
+	    "MeanFile": "./CIFAR-10_mean.xml",
+	    "DatasetSize": 10000,
+	    "BatchSize": 100,
+	    "CropRatio": 1,
+	    "CropType": "center"
+    }
+}

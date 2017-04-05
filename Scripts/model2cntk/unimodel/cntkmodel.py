@@ -42,7 +42,7 @@ class CntkBatchNormParameters(CntkParameters):
         self.bias_setting = [1, 1]
 
 
-class CntkDenseLayerParameters(CntkParameters):
+class CntkLinearLayerParameters(CntkParameters):
     def __init__(self):
         self.num_output = 0
         self.scale_setting = [1, 1]
@@ -80,7 +80,7 @@ class CntkLayerType(Enum):
     pooling = 3
     batch_normalization = 4
     plus = 5
-    dense = 6
+    linear = 6
     splice = 7
     classification_error = 10
     cross_entropy_with_softmax = 11

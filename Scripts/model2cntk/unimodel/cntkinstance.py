@@ -169,7 +169,7 @@ class ApiSetup(object):
         return ops.relu(sanitize_input, name=cntk_layer.op_name)
 
     @staticmethod
-    def dense(cntk_layer, inputs):
+    def linear(cntk_layer, inputs):
         sanitize_input = internal.sanitize_input(inputs[0])
         input_channel = sanitize_input.shape
         output_channel = cntk_layer.parameters.num_output

@@ -117,10 +117,10 @@ class SetupCaffeParameters(baseadapter.SetupParameters):
         SetupCaffeParameters.default(caffe_parameters, inputs_info, cntk_layer_def)
 
     @staticmethod
-    def dense(caffe_parameters, inputs_info, cntk_layer_def):
+    def linear(caffe_parameters, inputs_info, cntk_layer_def):
         if inputs_info:
             pass
-        cntk_layer_def.parameters = cntkmodel.CntkDenseLayerParameters()
+        cntk_layer_def.parameters = cntkmodel.CntkLinearLayerParameters()
 
         cntk_layer_def.parameters.transpose = True if not caffe_parameters.transpose else False
         cntk_layer_def.parameters.num_output = caffe_parameters.num_output
