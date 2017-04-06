@@ -308,6 +308,13 @@ def test_layers_dense(device_id):
 
     np.testing.assert_array_almost_equal(res, npout, decimal=7, err_msg='Error in 2-dense layer')
 
+    ####################################################
+    # Test 4: Failing configuration
+    ####################################################
+
+    with pytest.raises(ValueError):
+        Dense(2, input_rank=1, map_rank=1) # input_rank and map_rank can be specified at the same time
+
 ########################################
 # Test Embedding layer for correctness
 ########################################
@@ -341,6 +348,16 @@ def test_layers_embedding():
 
     npout = np.matrix(dat[0]) * e.E.value
     np.testing.assert_array_equal(res, npout, err_msg='Error in constant embedding layer')
+
+    # Failing calls
+    with pytest.raises(ValueError):
+        Embedding(shape=None, init=1, weights=[1., 2., 3.])
+
+    with pytest.raises(ValueError):
+        Embedding(3, weights=[1., 2., 3.])
+
+    with pytest.raises(ValueError):
+        Embedding(name="embedding")
 
 ########################################
 # Test Convolutional layer for shape correctness
@@ -647,6 +664,10 @@ def test_1D_convolution_without_reduction_dim():
     out = c(data)
     exp = [[10, 24, 40, 38, 44]]
     np.testing.assert_array_equal(out, exp, err_msg='Error in 1D convolution without reduction dimension')
+
+    # Failing call
+    with pytest.raises(ValueError):
+        Convolution1D((2,3))
 
 ##########################################################
 # Test Deconvolution layer for correctness

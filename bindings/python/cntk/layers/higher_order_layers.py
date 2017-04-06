@@ -9,6 +9,9 @@ higher_order_layers -- higher-order functions, like Sequential() and ResNetBlock
 Note that sequential higher-order functions like Recurrence() are in sequence.py.
 '''
 
+from types import FunctionType
+from inspect import getargspec
+
 from ..variables import Record
 from .blocks import *
 from .blocks import _initializer_for, _get_initial_state_or_default, _INFERRED, _inject_name
@@ -145,10 +148,9 @@ def For(what_range, constructor, name=''):
         A function that accepts one argument and applies the layers as constructed by ``constructor`` one after another.
     '''
     # Python 2.7 support requires us to use getargspec() instead of inspect
-    from inspect import getargspec
     takes_arg = len(getargspec(constructor).args) > 0
 
-    from types import FunctionType
+    # For Python 3, check if it is a python function/lambda
     if type(constructor) != FunctionType:
         raise ValueError("constructor must be a Python function/lambda")
 

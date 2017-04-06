@@ -65,10 +65,8 @@ can be vastly improved. To explicitly set the device to GPU, set the target devi
     from cntk.device import set_default_device, gpu
     set_default_device(gpu(0))
 
-Now let's setup a network that will learn a classifier based on the example fully connected classifier network 
-(``nn.fully_connected_classifier_net``). This is defined, along with several other simple and more complex DNN building blocks in 
-``Examples/common/nn.py``. Go to the ``[CNTK root]/Examples/common/`` directory and create a ``simplenet.py`` file with the 
-following contents:
+Now let's setup a network that will learn a classifier with fully connected layers using only the functions :func:`~cntk.layers.layers.Sequential`
+and :func:`~cntk.layers.layers.Dense` from the Layers Library. Create a ``simplenet.py`` file with the following contents:
 
 .. literalinclude:: simplenet.py
 

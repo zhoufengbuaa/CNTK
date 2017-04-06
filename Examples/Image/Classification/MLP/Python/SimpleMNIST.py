@@ -19,6 +19,8 @@ from cntk.metrics import classification_error
 from cntk.train.training_session import *
 from cntk.logging import ProgressPrinter, TensorBoardProgressWriter
 
+abs_path = os.path.dirname(os.path.abspath(__file__))
+
 def check_path(path):
     if not os.path.exists(path):
         readme_file = os.path.normpath(os.path.join(

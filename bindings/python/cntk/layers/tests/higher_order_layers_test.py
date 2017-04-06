@@ -26,7 +26,7 @@ def test_for_constructor_layer(layers_count, dense_units):
     assert res.shape == expected_output_shape
 
 def test_failing_for_constructor():
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         network = For(range(3), Dense(5))
 
 INPUT_DATA = [[2, 8],[4, 7, 9], [5, 6, 10]]

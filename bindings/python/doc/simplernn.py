@@ -19,7 +19,7 @@ def create_reader(path, is_training, input_dim, label_dim):
 
 
 # Defines the LSTM model for classifying sequences
-def LSTM_sequence_classifer_net(input, num_output_classes, embedding_dim,
+def LSTM_sequence_classifier_net(input, num_output_classes, embedding_dim,
                                 LSTM_dim, cell_dim):
     lstm_classifier = Sequential([Embedding(embedding_dim),
                                   Recurrence(LSTM(LSTM_dim, cell_dim))[0],
@@ -41,7 +41,7 @@ def train_sequence_classifier():
     label = input(num_output_classes)
 
     # Instantiate the sequence classification model
-    classifier_output = LSTM_sequence_classifer_net(
+    classifier_output = LSTM_sequence_classifier_net(
         features, num_output_classes, embedding_dim, hidden_dim, cell_dim)
 
     ce = cross_entropy_with_softmax(classifier_output, label)
