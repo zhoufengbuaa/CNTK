@@ -131,9 +131,6 @@ nitpick_ignore = [
   ('py:obj', 'cv_num_samples'),
   ('py:mod', 'cntk.utils'),
   ('py:class', 'cntk.Input'),
-  ('py:class', 'cntk.functions.Function'),
-  ('py:class', 'cntk.ops.functions.Function(initial_state, dynamic_axis_like)'),
-  ('py:class', 'cntk.ops.variables.Variable'),
   ('py:class', 'cntk.variables.Variable.Type'),
   ('py:func', 'cntk.functions.Function.update_signature'),
   ('py:mod', 'cntk.utils'),
@@ -188,6 +185,11 @@ def autodoc_process_docstring(app, what, name, obj, options, lines):
 
 def autodoc_process_signature(app, what, name, obj, options, signature, return_annotation):
   if what == 'class': options['show-inheritance'] = False # TODO
+  #http://www.sphinx-doc.org/en/stable/extdev/appapi.html#sphinx.application.Sphinx
+  #app.warn("huch")
+  #app.verbose
+  #message, location=None, prefix='WARNING: ', type=None, subtype=None, colorfunc=<function inner>)
+  #doctree-resolved(app, doctree, docname)
 #  if name == 'cntk.axis.Axis':
 #    import pdb; pdb.set_trace()
 
