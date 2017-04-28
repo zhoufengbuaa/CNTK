@@ -27,6 +27,7 @@ class ElementType:
     FLOAT = 0
     DOUBLE = 1
 
+
 class MatrixEncodingType:
     DENSE = 0
     SPARSE_CSC = 1
