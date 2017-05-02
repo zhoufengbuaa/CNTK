@@ -597,6 +597,7 @@ public:
     virtual void /*ComputationNode::*/ ForwardProp(const FrameRange& fr) override
     {
         if (!m_passThrough && m_neuronST) m_annealSlope *= m_annealRate;
+        fprintf(stderr, "anneal slope %f\n", m_annealSlope);
         Matrix<ElemType> result = ValueFor(fr);
         Matrix<ElemType> inputm = InputRef(0).ValueFor(fr); 
         Matrix<ElemType>::StochasticBinaryForward(inputm, result, m_annealSlope);
