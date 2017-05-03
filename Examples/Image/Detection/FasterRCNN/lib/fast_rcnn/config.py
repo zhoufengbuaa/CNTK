@@ -34,7 +34,7 @@ cfg = __C
 
 __C.CNTK = edict()
 
-__C.CNTK.DATASET = "Grocery" # "Grocery" or "Pascal"
+__C.CNTK.DATASET = "Pascal" # "Grocery" or "Pascal"
 __C.CNTK.BASE_MODEL = "AlexNet" # "VGG16" or "AlexNet"
 __C.CNTK.MAX_EPOCHS = 20
 __C.CNTK.INPUT_ROIS_PER_IMAGE = 50
@@ -42,6 +42,7 @@ __C.CNTK.INPUT_ROIS_PER_IMAGE = 50
 __C.CNTK.DEBUG_FWD = False
 __C.CNTK.DEBUG_BKW = False
 __C.CNTK.DEBUG_LAYERS = False
+__C.CNTK.DEBUG_OUTPUT = True
 
 
 #
