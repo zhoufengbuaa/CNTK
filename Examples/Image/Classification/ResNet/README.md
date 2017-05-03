@@ -31,17 +31,20 @@ We offer multiple ResNet examples, including ResNet20 and ResNet110 for CIFAR-10
 #### ResNet50
 |CNTK model download path | https://www.cntk.ai/Models/Caffe_Converted/ResNet50_ImageNet.model
 |:---------|:---
+|Last updated | April, 28th, 2017
 |Source Caffe model website | https://github.com/KaimingHe/deep-residual-networks
 |Single crop top 5 error | 7.75%
 
 #### ResNet101
 |CNTK model download path | https://www.cntk.ai/Models/Caffe_Converted/ResNet101_ImageNet.model
 |:---------|:---
+|Last updated | April, 28th, 2017
 |Source Caffe model website | https://github.com/KaimingHe/deep-residual-networks
 |Single crop top 5 error | 7.12%
 
 #### ResNet152
 |CNTK model download path | https://www.cntk.ai/Models/Caffe_Converted/ResNet152_ImageNet.model
 |:---------|:---
+|Last updated | April, 28th, 2017
 |Source Caffe model website | https://github.com/KaimingHe/deep-residual-networks
 |Single crop top 5 error | 6.71%

@@ -32,5 +32,6 @@ We currently offer the BN-Inception (https://arxiv.org/abs/1502.03167) and Incep
 #### BN-Inception
 |CNTK model download path | https://www.cntk.ai/Models/Caffe_Converted/BNInception_ImageNet.model
 |:---------|:---
+|Last updated | April, 28th, 2017
 |Source Caffe model website | https://github.com/BVLC/caffe/tree/master/models/bvlc_googlenet
 |Single crop top 5 error | 11.50%
