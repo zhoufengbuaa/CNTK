@@ -5,7 +5,7 @@
 from cntk import output_variable
 from cntk.ops.functions import UserFunction
 import numpy as np
-from fast_rcnn.config import cfg
+from lib.fast_rcnn.config import cfg
 
 DEBUG = cfg["CNTK"].DEBUG_LAYERS
 debug_fwd = cfg["CNTK"].DEBUG_FWD

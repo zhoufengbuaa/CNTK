@@ -10,21 +10,6 @@ import os, sys
 from matplotlib.pyplot import imsave
 from PIL import ImageFont
 import cv2
-
-available_font = "arial.ttf"
-try:
-    dummy = ImageFont.truetype(available_font, 16)
-except:
-    available_font = "FreeMono.ttf"
-
-abs_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(abs_path)
-sys.path.append(os.path.join(abs_path, "..", ".."))
-sys.path.append(os.path.join(abs_path, "lib"))
-sys.path.append(os.path.join(abs_path, "lib", "rpn"))
-sys.path.append(os.path.join(abs_path, "lib", "nms"))
-sys.path.append(os.path.join(abs_path, "lib", "nms", "gpu"))
-
 import cntk
 from cntk import Trainer, UnitType, load_model, user_function, Axis, input, parameter, times, combine, relu, \
     softmax, roipooling, reduce_sum, slice, splice, reshape, plus, CloneMethod, minus, element_times, alias
@@ -46,10 +31,19 @@ from cntk_helpers import visualizeResultsFaster
 from lib.fast_rcnn.config import cfg
 from lib.fast_rcnn.bbox_transform import bbox_transform_inv
 
+available_font = "arial.ttf"
+try:
+    dummy = ImageFont.truetype(available_font, 16)
+except:
+    available_font = "FreeMono.ttf"
+
+abs_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(abs_path, "..", ".."))
+
 ###############################################################
 ###############################################################
 train_e2e = True
-make_mode = True
+make_mode = False
 graph_type = "png" # "png" or "pdf"
 DEBUG_OUTPUT = cfg["CNTK"].DEBUG_OUTPUT
 reader_trace_level = TraceLevel.Error
