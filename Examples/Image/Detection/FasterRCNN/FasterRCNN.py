@@ -7,6 +7,10 @@
 from __future__ import print_function
 import numpy as np
 import os, sys
+
+abs_path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(abs_path, ".."))
+
 from matplotlib.pyplot import imsave
 from PIL import ImageFont
 import cv2
@@ -22,23 +26,20 @@ from cntk.logging import log_number_of_parameters, ProgressPrinter
 from cntk.logging.graph import find_by_name, plot
 from cntk.losses import cross_entropy_with_softmax
 from cntk.metrics import classification_error
-from lib.rpn.anchor_target_layer import AnchorTargetLayer
-from lib.rpn.proposal_layer import ProposalLayer
-from lib.rpn.proposal_target_layer import ProposalTargetLayer
-from lib.rpn.cntk_smoothL1_loss import SmoothL1Loss
-from lib.rpn.cntk_ignore_label import IgnoreLabel
+from utils.rpn.anchor_target_layer import AnchorTargetLayer
+from utils.rpn.proposal_layer import ProposalLayer
+from utils.rpn.proposal_target_layer import ProposalTargetLayer
+from utils.rpn.cntk_smoothL1_loss import SmoothL1Loss
+from utils.rpn.cntk_ignore_label import IgnoreLabel
+from utils.fast_rcnn.bbox_transform import bbox_transform_inv
+from config import cfg
 from cntk_helpers import visualizeResultsFaster
-from lib.fast_rcnn.config import cfg
-from lib.fast_rcnn.bbox_transform import bbox_transform_inv
 
 available_font = "arial.ttf"
 try:
     dummy = ImageFont.truetype(available_font, 16)
 except:
     available_font = "FreeMono.ttf"
-
-abs_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(abs_path, "..", ".."))
 
 ###############################################################
 ###############################################################
@@ -160,7 +161,7 @@ def create_rpn(conv_out, gt_boxes, train=True):
 
     # RPN targets
     # Comment: rpn_cls_score is only passed   vvv   to get width and height of the conv feature map ...
-    atl = user_function(AnchorTargetLayer(rpn_cls_score, gt_boxes, im_info=im_info))
+    atl = user_function(AnchorTargetLayer(rpn_cls_score, gt_boxes, im_info=im_info, cfg=cfg))
     rpn_labels = atl.outputs[0]
     rpn_bbox_targets = atl.outputs[1]
     rpn_bbox_inside_weights = atl.outputs[2]
@@ -248,7 +249,7 @@ def faster_rcnn_predictor(features, gt_boxes):
     # RPN
     rpn_rois, rpn_losses = create_rpn(conv_out, gt_boxes)
 
-    ptl = user_function(ProposalTargetLayer(rpn_rois, gt_boxes, num_classes=num_classes))
+    ptl = user_function(ProposalTargetLayer(rpn_rois, gt_boxes, num_classes=num_classes, im_info=im_info, cfg=cfg))
     rois = alias(ptl.outputs[0], name='rpn_target_rois')
     labels = alias(ptl.outputs[1], name='label_targets')
     bbox_targets = alias(ptl.outputs[2], name='bbox_targets')
