@@ -5,8 +5,7 @@ import cntk as C
 TEST_CONFIG = [
     # (num_layers, bidirectional, recurrent_op
     (1, True,  'lstm'),
-    (1, False,  'lstm'),
-    (2, False,  'lstm'),
+    (1, False, 'lstm'),
     (2, False, 'lstm'),
     (3, True,  'lstm')
 ]

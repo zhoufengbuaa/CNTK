@@ -8,9 +8,19 @@ import cntk as C
 
 def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
     '''
-    from_cudnn(cudnn_rnn, hidden_size, num_layers)
-
     converts cudnn optimized_rnnstack to non-cudnn functions to run in non-CUDA environment
+    
+    Args:
+        cudnn_rnn: the optimized_rnnstack function that contains the parameters to be converted
+        hidden_size (int): number of hidden units in each layer (and in each direction).
+        num_layers (int): number of layers in the stack.
+        bidirectional(bool, default False): whether each layer should compute both in forward
+         and separately in backward mode and concatenate the results
+         (if True the output is twice the hidden_size). The default is
+         False which means the recurrence is only computed in the forward direction.
+        recurrent_op (str, optional): one of 'lstm', 'gru', 'relu', or 'tanh'.
+    Returns:
+        converted rnn function on GEMM based implementation that can be used on CPU
     '''
     if recurrent_op != 'lstm':
         raise(ValueError('unsupported recurrent_op value "%s"'%recurrent_op))
@@ -20,6 +30,7 @@ def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
         raise(ValueError('unexpected cudnn_rnn.root_function.op_name value "%s"'%cudnn_rnn.root_function.op_name))
     
     cudnn_param = cudnn_rnn.parameters[0]
+    rnn_name = cudnn_rnn.name
     input_var = cudnn_rnn.arguments[0]
     
     def _any_inferred(shape):
@@ -35,9 +46,9 @@ def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
     if recurrent_op == 'lstm':
         num_gates = 4
         if bidirectional:
-            rnn_lambda = lambda x, i : C.splice(C.layers.Recurrence(C.layers.LSTM(hidden_size, name='rnn_fw'+i))(x), C.layers.Recurrence(C.layers.LSTM(hidden_size, name='rnn_bw'+i), go_backwards=True)(x))
+            rnn_lambda = lambda x, i : C.splice(C.layers.Recurrence(C.layers.LSTM(hidden_size, name=rnn_name+'_fw'+i))(x), C.layers.Recurrence(C.layers.LSTM(hidden_size, name=rnn_name+'_bw'+i), go_backwards=True)(x))
         else:
-            rnn_lambda = lambda x, i : C.layers.Recurrence(C.layers.LSTM(hidden_size, name="rnn_"+i))(x)
+            rnn_lambda = lambda x, i : C.layers.Recurrence(C.layers.LSTM(hidden_size, name=rnn_name+"_"+i))(x)
 
     noncudnn_func = rnn_lambda(input_var, '0')
 
@@ -77,18 +88,18 @@ def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
     for layer in range(num_layers):
         layer_size = (layer_input_size + hidden_size) * hidden_size * num_gates * multiplier
         layer_param = param[offset:offset+layer_size]
-        layer_name = '{}'.format(layer)
+        layer_name = str(layer)
         if bidirectional:
             fw_Wt, fw_Ht, bw_Wt, bw_Ht = np.split(layer_param, _get_cudnn_rnn_weight_splitter(layer_input_size, hidden_size))
-            fw_cell = noncudnn_func.find_by_name('rnn_fw'+layer_name, -1)
-            bw_cell = noncudnn_func.find_by_name('rnn_bw'+layer_name, -1)
+            fw_cell = noncudnn_func.find_by_name(rnn_name+'_fw'+layer_name, -1)
+            bw_cell = noncudnn_func.find_by_name(rnn_name+'_bw'+layer_name, -1)
             fw_cell.W.value = _adjust_gate_order(fw_Wt.reshape(num_gates*hidden_size, -1).transpose())
             fw_cell.H.value = _adjust_gate_order(fw_Ht.reshape(num_gates*hidden_size, -1).transpose())
             bw_cell.W.value = _adjust_gate_order(bw_Wt.reshape(num_gates*hidden_size, -1).transpose())
             bw_cell.H.value = _adjust_gate_order(bw_Ht.reshape(num_gates*hidden_size, -1).transpose())
         else:
             Wt, Ht = np.split(layer_param, _get_cudnn_rnn_weight_splitter(layer_input_size, hidden_size))
-            cell = noncudnn_func.find_by_name('rnn_'+layer_name, -1)
+            cell = noncudnn_func.find_by_name(rnn_name+'_'+layer_name, -1)
             cell.W.value = _adjust_gate_order(Wt.reshape(num_gates*hidden_size, -1).transpose())
             cell.H.value = _adjust_gate_order(Ht.reshape(num_gates*hidden_size, -1).transpose())
 
@@ -96,21 +107,21 @@ def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
         layer_input_size = hidden_size * multiplier
         
         if layer != num_layers - 1:
-            noncudnn_func = rnn_lambda(noncudnn_func.output, '{}'.format(layer+1))
+            noncudnn_func = rnn_lambda(noncudnn_func.output, str(layer+1))
 
     for layer in range(num_layers):
         layer_size = 2 * hidden_size * num_gates * multiplier
         layer_param = param[offset:offset+layer_size]
-        layer_name = '{}'.format(layer)
+        layer_name = str(layer)
         if bidirectional:
             fw_b1, fw_b2, bw_b1, bw_b2 = np.split(layer_param, _get_cudnn_rnn_bias_splitter(hidden_size))
-            fw_cell = noncudnn_func.find_by_name('rnn_fw'+layer_name, -1)
-            bw_cell = noncudnn_func.find_by_name('rnn_bw'+layer_name, -1)
+            fw_cell = noncudnn_func.find_by_name(rnn_name+'_fw'+layer_name, -1)
+            bw_cell = noncudnn_func.find_by_name(rnn_name+'_bw'+layer_name, -1)
             fw_cell.b.value = _adjust_gate_order(fw_b1 + fw_b2).reshape(-1)
             bw_cell.b.value = _adjust_gate_order(bw_b1 + bw_b2).reshape(-1)
         else:
             b1, b2 = np.split(layer_param, _get_cudnn_rnn_bias_splitter(hidden_size))
-            cell = noncudnn_func.find_by_name('rnn_'+layer_name, -1)
+            cell = noncudnn_func.find_by_name(rnn_name+'_'+layer_name, -1)
             cell.b.value = _adjust_gate_order(b1 + b2).reshape(-1)
         offset += layer_size
 
