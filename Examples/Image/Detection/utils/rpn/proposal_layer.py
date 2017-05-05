@@ -31,15 +31,15 @@ class ProposalLayer(UserFunction):
         self._num_anchors = self._anchors.shape[0]
         self._im_info = im_info
 
-        self._TRAIN_RPN_PRE_NMS_TOP_N = 12000 if cfg is None else cfg[TRAIN].RPN_PRE_NMS_TOP_N
-        self._TRAIN_RPN_POST_NMS_TOP_N = 2000 if cfg is None else cfg[TRAIN].RPN_POST_NMS_TOP_N
-        self._TRAIN_RPN_NMS_THRESH = 0.7 if cfg is None else cfg[TRAIN].RPN_NMS_THRESH
-        self._TRAIN_RPN_MIN_SIZE = 16 if cfg is None else cfg[TRAIN].RPN_MIN_SIZE
+        self._TRAIN_RPN_PRE_NMS_TOP_N = 12000 if cfg is None else cfg["TRAIN"].RPN_PRE_NMS_TOP_N
+        self._TRAIN_RPN_POST_NMS_TOP_N = 2000 if cfg is None else cfg["TRAIN"].RPN_POST_NMS_TOP_N
+        self._TRAIN_RPN_NMS_THRESH = 0.7 if cfg is None else cfg["TRAIN"].RPN_NMS_THRESH
+        self._TRAIN_RPN_MIN_SIZE = 16 if cfg is None else cfg["TRAIN"].RPN_MIN_SIZE
 
-        self._TEST_RPN_PRE_NMS_TOP_N = 6000 if cfg is None else cfg[TEST].RPN_PRE_NMS_TOP_N
-        self._TEST_RPN_POST_NMS_TOP_N = 300 if cfg is None else cfg[TEST].RPN_POST_NMS_TOP_N
-        self._TEST_RPN_NMS_THRESH = 0.7 if cfg is None else cfg[TEST].RPN_NMS_THRESH
-        self._TEST_RPN_MIN_SIZE = 16 if cfg is None else cfg[TEST].RPN_MIN_SIZE
+        self._TEST_RPN_PRE_NMS_TOP_N = 6000 if cfg is None else cfg["TEST"].RPN_PRE_NMS_TOP_N
+        self._TEST_RPN_POST_NMS_TOP_N = 300 if cfg is None else cfg["TEST"].RPN_POST_NMS_TOP_N
+        self._TEST_RPN_NMS_THRESH = 0.7 if cfg is None else cfg["TEST"].RPN_NMS_THRESH
+        self._TEST_RPN_MIN_SIZE = 16 if cfg is None else cfg["TEST"].RPN_MIN_SIZE
 
         if DEBUG:
             print ('feat_stride: {}'.format(self._feat_stride))

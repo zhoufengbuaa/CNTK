@@ -20,13 +20,15 @@ class ProposalTargetLayer(UserFunction):
     Assign object detection proposals to ground-truth targets. Produces proposal
     classification labels and bounding-box regression targets.
     """
-
-    def __init__(self, arg1, arg2, name='ProposalTargetLayer', num_classes=2, im_info=None, cfg=None):
+    
+    def __init__(self, arg1, arg2, name='ProposalTargetLayer', num_classes=2, im_info=None, cfg=None, deterministic=False):
         super(ProposalTargetLayer, self).__init__([arg1, arg2], name=name)
 
         # layer_params = yaml.load(self.param_str_)
         self._num_classes = num_classes # layer_params['num_classes']
         self._im_info = im_info
+        self._cfg = cfg
+        self._determininistic_mode = deterministic
 
         self._TRAIN_RPN_POST_NMS_TOP_N = 2000 if cfg is None else cfg["TRAIN"].RPN_POST_NMS_TOP_N
         self._TRAIN_FG_FRACTION = 0.25 if cfg is None else cfg["TRAIN"].FG_FRACTION
@@ -56,7 +58,7 @@ class ProposalTargetLayer(UserFunction):
         return [output_variable(rois_shape, self.inputs[0].dtype, self.inputs[0].dynamic_axes,
                                 name="ptl_rois", needs_gradient=False),
                 output_variable(labels_shape, self.inputs[0].dtype, self.inputs[0].dynamic_axes,
-                                name="ptl_lables", needs_gradient=False),
+                                name="ptl_labels", needs_gradient=False),
                 output_variable(bbox_targets_shape, self.inputs[0].dtype, self.inputs[0].dynamic_axes,
                                 name="ptl_bbox", needs_gradient=False),
                 output_variable(bbox_inside_weights_shape, self.inputs[0].dtype, self.inputs[0].dynamic_axes,
@@ -73,13 +75,6 @@ class ProposalTargetLayer(UserFunction):
         # and other times after box coordinates -- normalize to one format
         gt_boxes = bottom[1][0,:]
 
-        # For CNTK: convert and scale gt_box coords from x, y, w, h relative to x1, y1, x2, y2 absolute
-        im_width = self._im_info[0]
-        im_height = self._im_info[1]
-        whwh = (im_width, im_height, im_width, im_height)
-        ngtb = np.vstack((gt_boxes[:, 0], gt_boxes[:, 1], gt_boxes[:, 0] + gt_boxes[:, 2], gt_boxes[:, 1] + gt_boxes[:, 3]))
-        gt_boxes[:, :-1] = ngtb.transpose() * whwh
-
         # remove zero padded ground truth boxes
         keep = np.where(
             ((gt_boxes[:,2] - gt_boxes[:,0]) > 0) &
@@ -91,12 +86,7 @@ class ProposalTargetLayer(UserFunction):
             "No ground truth boxes provided"
 
         # Include ground-truth boxes in the set of candidate rois
-        # zeros = np.zeros((gt_boxes.shape[0], 1), dtype=gt_boxes.dtype)
-        # all_rois = np.vstack(
-        #     (all_rois, np.hstack((zeros, gt_boxes[:, :-1])))
-        # )
         # for CNTK: add batch index axis with all zeros to both inputs
-        # -1, since caffe gt-boxes contain label as 5th dimension
         all_rois = np.vstack((all_rois, gt_boxes[:, :-1]))
         zeros = np.zeros((all_rois.shape[0], 1), dtype=all_rois.dtype)
         all_rois = np.hstack((zeros, all_rois))
@@ -113,7 +103,8 @@ class ProposalTargetLayer(UserFunction):
         labels, rois, bbox_targets, bbox_inside_weights = _sample_rois(
             all_rois, gt_boxes, fg_rois_per_image,
             rois_per_image, self._num_classes,
-            self._TRAIN_FG_THRESH, self._TRAIN_BG_THRESH_HI, self._TRAIN_BG_THRESH_LO)
+            self._TRAIN_FG_THRESH, self._TRAIN_BG_THRESH_HI, self._TRAIN_BG_THRESH_LO,
+            deterministic=self._determininistic_mode)
 
         if DEBUG:
             print ('num fg: {}'.format((labels > 0).sum()))
@@ -146,13 +137,6 @@ class ProposalTargetLayer(UserFunction):
 
         # for CNTK: get rid of batch ind zeros and add batch axis
         rois = rois[:,1:]
-        # For CNTK: for the roipooling layer convert and scale roi coords back to x, y, w, h relative from x1, y1, x2, y2 absolute
-        # TODO: change ROI pooling implementation to accept absolute coords
-        #rois = np.vstack((rois[:, 0], rois[:, 1], rois[:, 2] - rois[:, 0], rois[:, 3] - rois[:, 1])).transpose()
-        #rois[:,0] /= im_width
-        #rois[:,1] /= im_height
-        #rois[:,2] /= im_width
-        #rois[:,3] /= im_height
 
         # sampled rois
         rois.shape = (1,) + rois.shape
@@ -178,7 +162,8 @@ class ProposalTargetLayer(UserFunction):
         pass
 
     def clone(self, cloned_inputs):
-        return ProposalTargetLayer(cloned_inputs[0], cloned_inputs[1], num_classes=self._num_classes)
+        return ProposalTargetLayer(cloned_inputs[0], cloned_inputs[1],
+                                   num_classes=self._num_classes, im_info=self._im_info, cfg=self._cfg)
 
     def serialize(self):
         internal_state = {}
@@ -229,7 +214,7 @@ def _compute_targets(ex_rois, gt_rois, labels):
     return np.hstack((labels[:, np.newaxis], targets)).astype(np.float32, copy=False)
 
 def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_classes,
-                 TRAIN_FG_THRESH, TRAIN_BG_THRESH_HI, TRAIN_BG_THRESH_LO):
+                 TRAIN_FG_THRESH, TRAIN_BG_THRESH_HI, TRAIN_BG_THRESH_LO, deterministic=False):
     """Generate a random sample of RoIs comprising foreground and background
     examples.
     """
@@ -249,8 +234,11 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
 
     # Sample foreground regions without replacement
     if fg_inds.size > 0:
-        fg_inds = npr.choice(fg_inds, size=fg_rois_per_this_image, replace=False)
-
+        if deterministic:
+            fg_inds = fg_inds[:fg_rois_per_this_image]
+        else:
+            fg_inds = npr.choice(fg_inds, size=fg_rois_per_this_image, replace=False)
+            
     # Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     bg_inds = np.where((max_overlaps < TRAIN_BG_THRESH_HI) &
                        (max_overlaps >= TRAIN_BG_THRESH_LO))[0]
@@ -260,7 +248,10 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
     bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.size)
     # Sample background regions without replacement
     if bg_inds.size > 0:
-        bg_inds = npr.choice(bg_inds, size=bg_rois_per_this_image, replace=False)
+        if deterministic:
+            bg_inds = bg_inds[:bg_rois_per_this_image]
+        else:
+            bg_inds = npr.choice(bg_inds, size=bg_rois_per_this_image, replace=False)
 
     # The indices that we're selecting (both fg and bg)
     keep_inds = np.append(fg_inds, bg_inds)
@@ -275,10 +266,5 @@ def _sample_rois(all_rois, gt_boxes, fg_rois_per_image, rois_per_image, num_clas
 
     bbox_targets, bbox_inside_weights = \
         _get_bbox_regression_labels(bbox_target_data, num_classes)
-
-    # Debug code
-    temp = bbox_targets * bbox_inside_weights
-    if abs(temp).max() > 1.0:
-        import pdb; pdb.set_trace()
 
     return labels, rois, bbox_targets, bbox_inside_weights

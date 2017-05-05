@@ -31,6 +31,7 @@ class AnchorTargetLayer(UserFunction):
         self._num_anchors = self._anchors.shape[0]
         self._feat_stride = 16 #layer_params['feat_stride']
         self._im_info = im_info
+        self._cfg = cfg
 
         self._EPS = 1e-14 if cfg is None else cfg.EPS
         self._TRAIN_RPN_CLOBBER_POSITIVES = False if cfg is None else cfg["TRAIN"].RPN_CLOBBER_POSITIVES
@@ -95,13 +96,6 @@ class AnchorTargetLayer(UserFunction):
         gt_boxes = bottom[1][0,:]
         # im_info
         im_info = self._im_info
-
-        # For CNTK: convert and scale gt_box coords from x, y, w, h relative to x1, y1, x2, y2 absolute
-        im_width = im_info[0]
-        im_height = im_info[1]
-        whwh = (im_width, im_height, im_width, im_height) # TODO: scale beforehand
-        ngtb = np.vstack((gt_boxes[:, 0], gt_boxes[:, 1], gt_boxes[:, 0] + gt_boxes[:, 2], gt_boxes[:, 1] + gt_boxes[:, 3]))
-        gt_boxes[:, :-1] = ngtb.transpose() * whwh
 
         # remove zero padded ground truth boxes
         keep = np.where(
@@ -253,7 +247,8 @@ class AnchorTargetLayer(UserFunction):
         pass
 
     def clone(self, cloned_inputs):
-        return AnchorTargetLayer(cloned_inputs[0], cloned_inputs[1], im_info=self._im_info)
+        return AnchorTargetLayer(cloned_inputs[0], cloned_inputs[1],
+                                 im_info=self._im_info, cfg=self._cfg)
 
     def serialize(self):
         internal_state = {}
