@@ -43,9 +43,9 @@ except:
 
 ###############################################################
 ###############################################################
-train_e2e = False
-make_mode = False
 graph_type = "png" # "png" or "pdf"
+train_e2e = cfg["CNTK"].TRAIN_E2E
+make_mode = cfg["CNTK"].MAKE_MODE
 DEBUG_OUTPUT = cfg["CNTK"].DEBUG_OUTPUT
 reader_trace_level = TraceLevel.Error
 
@@ -59,7 +59,7 @@ num_channels = 3
 image_height = 1000
 image_width = 1000
 mb_size = 1
-max_epochs = cfg["CNTK"].MAX_EPOCHS
+max_epochs = cfg["CNTK"].MAX_EPOCHS_E2E
 im_info = [image_width, image_height, 1]
 
 # dataset specific parameters
@@ -145,7 +145,7 @@ def get_4stage_learning_parameters():
 
     # frcn training: lr = [0.001] * 6 + [0.0001] * 2, momentum = 0.9, weight decay = 0.0005 (cf. stage1_fast_rcnn_solver30k40k.pt)
     if base_model_to_use == "VGG16":
-        lrp['frcn_epochs'] = 20 #8
+        lrp['frcn_epochs'] = 8
         lrp['frcn_lr_per_sample'] = [0.001] * 6 + [0.0001] * 2
     else:
         if dataset == "Pascal":
@@ -305,8 +305,7 @@ def faster_rcnn_predictor(features, scaled_gt_boxes):
     # Load the pre-trained classification net and clone layers
     base_model = load_model(base_model_file)
     conv_layers = clone_model(base_model, [feature_node_name], [last_conv_node_name], clone_method=CloneMethod.freeze)
-    # TODO: reset to CloneMethod.clone. Setting to freeze for now to try learning rates
-    fc_layers = clone_model(base_model, [pool_node_name], [last_hidden_node_name], clone_method=CloneMethod.freeze)
+    fc_layers = clone_model(base_model, [pool_node_name], [last_hidden_node_name], clone_method=CloneMethod.clone)
 
     # Normalization and conv layers
     feat_norm = features - Constant(114)
@@ -464,7 +463,9 @@ def train_faster_rcnn_alternating(debug_output=False):
         print("Storing graphs and models to %s." % output_path)
         print("Using base model: {}".format(base_model_to_use))
         print("rpn_lr_per_sample: {}".format(lrp['rpn_lr_per_sample']))
+        print("rpn_epochs: {}".format(rpn_epochs))
         print("frcn_lr_per_sample: {}".format(lrp['frcn_lr_per_sample']))
+        print("frcn_epochs: {}".format(frcn_epochs))
 
     # base image classification model (e.g. VGG16 or AlexNet)
     base_model = load_model(base_model_file)
