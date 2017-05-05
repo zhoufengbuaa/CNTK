@@ -13,7 +13,7 @@ import numpy as np
 import numpy.random as npr
 from utils.rpn.generate_anchors import generate_anchors
 from utils.fast_rcnn.bbox_transform import bbox_transform
-from utils.utils.cython_bbox import bbox_overlaps
+from utils.bbox.cython_bbox import bbox_overlaps
 
 DEBUG = False
 

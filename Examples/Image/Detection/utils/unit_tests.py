@@ -1,18 +1,12 @@
 import os, sys
-from cntk import input as input_variable, user_function
-
 abs_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(abs_path)
-sys.path.append(os.path.join(abs_path, "..", ".."))
-sys.path.append(os.path.join(abs_path, "lib"))
-sys.path.append(os.path.join(abs_path, "lib", "rpn"))
-sys.path.append(os.path.join(abs_path, "lib", "nms"))
-sys.path.append(os.path.join(abs_path, "lib", "nms", "gpu"))
+sys.path.append(os.path.join(abs_path, ".."))
 
 import pytest
 import numpy as np
-from lib.rpn.proposal_layer import ProposalLayer as CntkProposalLayer
-from lib.rpn.proposal_layer_caffe import ProposalLayer as CaffeProposalLayer
+from cntk import input as input_variable, user_function
+from rpn.proposal_layer import ProposalLayer as CntkProposalLayer
+from caffe_layers.proposal_layer_caffe import ProposalLayer as CaffeProposalLayer
 
 def test_proposal_layer():
     cls_prob_shape_cntk = (2,9,61,61)

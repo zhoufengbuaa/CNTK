@@ -19,7 +19,7 @@ from cntk import Trainer, UnitType, load_model, user_function, Axis, input, para
     softmax, roipooling, reduce_sum, slice, splice, reshape, plus, CloneMethod, minus, element_times, alias
 from cntk.io import MinibatchSource, ImageDeserializer, CTFDeserializer, StreamDefs, StreamDef, TraceLevel
 from cntk.io.transforms import scale
-from cntk.initializer import glorot_uniform
+from cntk.initializer import glorot_uniform, normal
 from cntk.layers import placeholder, Convolution, Constant, Sequential
 from cntk.learners import momentum_sgd, learning_rate_schedule, momentum_schedule
 from cntk.logging import log_number_of_parameters, ProgressPrinter
@@ -43,7 +43,7 @@ except:
 
 ###############################################################
 ###############################################################
-train_e2e = True
+train_e2e = False
 make_mode = False
 graph_type = "png" # "png" or "pdf"
 DEBUG_OUTPUT = cfg["CNTK"].DEBUG_OUTPUT
@@ -86,7 +86,7 @@ elif dataset == "Pascal":
     train_roi_file = os.path.join(base_path, "trainval2007_rois_topleft_wh_rel.txt")
     test_roi_file = os.path.join(base_path, "test2007_rois_topleft_wh_rel.txt")
     num_classes = len(classes)
-    epoch_size = 5010
+    epoch_size = 500 # 5010
     num_test_images = 4952
 else:
     raise ValueError('unknown data set: %s' % dataset)
@@ -155,9 +155,13 @@ def clone_model(base_model, from_node_names, to_node_names, clone_method):
 
 def create_rpn(conv_out, gt_boxes, train=True):
     # RPN network
-    rpn_conv_3x3 = Convolution((3, 3), 256, activation=relu, pad=True, strides=1)(conv_out)
-    rpn_cls_score = Convolution((1, 1), 18, activation=None, name="rpn_cls_score")(rpn_conv_3x3)  # 2(bg/fg)  * 9(anchors)
-    rpn_bbox_pred = Convolution((1, 1), 36, activation=None, name="rpn_bbox_pred")(rpn_conv_3x3)  # 4(coords) * 9(anchors)
+    # init = 'normal', initValueScale = 0.01, initBias = 0.1
+    rpn_conv_3x3 = Convolution((3, 3), 256, activation=relu, pad=True, strides=1,
+                                init = normal(scale=0.01), init_bias=0.1)(conv_out)
+    rpn_cls_score = Convolution((1, 1), 18, activation=None, name="rpn_cls_score",
+                                init = normal(scale=0.01), init_bias=0.1)(rpn_conv_3x3)  # 2(bg/fg)  * 9(anchors)
+    rpn_bbox_pred = Convolution((1, 1), 36, activation=None, name="rpn_bbox_pred",
+                                init = normal(scale=0.01), init_bias=0.1)(rpn_conv_3x3)  # 4(coords) * 9(anchors)
 
     # RPN targets
     # Comment: rpn_cls_score is only passed   vvv   to get width and height of the conv feature map ...
@@ -223,12 +227,12 @@ def create_fast_rcnn_predictor(conv_out, rois, fc_layers):
     fc_out = fc_layers(roi_out)
 
     # prediction head
-    W_pred = parameter(shape=(4096, num_classes), init=glorot_uniform())
+    W_pred = parameter(shape=(4096, num_classes), init=normal(scale=0.01))
     b_pred = parameter(shape=num_classes, init=0)
     cls_score = plus(times(fc_out, W_pred), b_pred, name='cls_score')
 
     # regression head
-    W_regr = parameter(shape=(4096, num_classes*4), init=glorot_uniform())
+    W_regr = parameter(shape=(4096, num_classes*4), init=normal(scale=0.01))
     b_regr = parameter(shape=num_classes*4, init=0)
     bbox_pred = plus(times(fc_out, W_regr), b_regr, name='bbox_regr')
 
@@ -251,7 +255,7 @@ def faster_rcnn_predictor(features, gt_boxes):
 
     ptl = user_function(ProposalTargetLayer(rpn_rois, gt_boxes, num_classes=num_classes, im_info=im_info, cfg=cfg))
     rois = alias(ptl.outputs[0], name='rpn_target_rois')
-    labels = alias(ptl.outputs[1], name='label_targets')
+    label_targets = alias(ptl.outputs[1], name='label_targets')
     bbox_targets = alias(ptl.outputs[2], name='bbox_targets')
     bbox_inside_weights = alias(ptl.outputs[3], name='bbox_inside_w')
 
@@ -259,12 +263,12 @@ def faster_rcnn_predictor(features, gt_boxes):
     cls_score, bbox_pred = create_fast_rcnn_predictor(conv_out, rois, fc_layers)
 
     # loss functions
-    loss_cls = cross_entropy_with_softmax(cls_score, labels, axis=1)
+    loss_cls = cross_entropy_with_softmax(cls_score, label_targets, axis=1)
     loss_box = user_function(SmoothL1Loss(bbox_pred, bbox_targets, bbox_inside_weights))
     detection_losses = reduce_sum(loss_cls) + reduce_sum(loss_box)
 
     loss = rpn_losses + detection_losses
-    pred_error = classification_error(cls_score, labels, axis=1)
+    pred_error = classification_error(cls_score, label_targets, axis=1)
 
     return cls_score, loss, pred_error
 
@@ -298,7 +302,7 @@ def train_model(image_input, roi_input, loss, pred_error,
     if isinstance(loss, cntk.Variable):
         loss = combine([loss])
     # Instantiate the trainer object
-    learner = momentum_sgd(loss.parameters, lr_schedule, mm_schedule, l2_regularization_weight=l2_reg_weight)
+    learner = momentum_sgd(loss.parameters, lr_schedule, mm_schedule, l2_regularization_weight=l2_reg_weight, unit_gain=False)
     trainer = Trainer(None, (loss, pred_error), learner)
 
     # Create the minibatch source
@@ -393,8 +397,13 @@ def train_faster_rcnn_alternating(debug_output=False):
         rpn_epochs = 16
         lr_per_sample_rpn = [0.001] * 12 + [0.0001] * 4
     else:
-        rpn_epochs = 16
-        lr_per_sample_rpn = [0.002] * 4 + [0.001] * 4 + [0.0005] * 4 + [0.0001] * 4
+        if dataset == "Pascal":
+            rpn_epochs = 16
+            lr_per_sample_rpn = [0.001] * 12 + [0.0001] * 4
+            #lr_per_sample_rpn = [0.002] * 4 + [0.001] * 4 + [0.0005] * 4 + [0.0001] * 4
+        else:
+            rpn_epochs = 16
+            lr_per_sample_rpn = [0.002] * 4 + [0.001] * 4 + [0.0005] * 4 + [0.0001] * 4
     if start_train_conv_node_name != None:
         # TODO: this should be handled through different learning rates for the conv layers only
         # This is needed due to adding up all gradient in the ROI-pooling layer.
@@ -407,8 +416,13 @@ def train_faster_rcnn_alternating(debug_output=False):
         frcn_epochs = 20 #8
         lr_per_sample_frcn = [0.001] * 6 + [0.0001] * 2
     else:
-        frcn_epochs = 20
-        lr_per_sample_frcn = [0.0002] * 8 + [0.001] * 6 + [0.00001] * 6
+        if dataset == "Pascal":
+            frcn_epochs = 8
+            lr_per_sample_frcn = [0.001] * 6 + [0.0001] * 2
+            #lr_per_sample_frcn = [0.0002] * 8 + [0.001] * 6 + [0.00001] * 6
+        else:
+            frcn_epochs = 20
+            lr_per_sample_frcn = [0.0002] * 8 + [0.001] * 6 + [0.00001] * 6
     if start_train_conv_node_name != None:
         # TODO: this should be handled through different learning rates for the conv layers only
         # This is needed due to adding up all gradient in the ROI-pooling layer.
@@ -446,7 +460,7 @@ def train_faster_rcnn_alternating(debug_output=False):
         else:
             fixed_conv_layers = clone_model(base_model, [feature_node_name], [start_train_conv_node_name], clone_method=CloneMethod.freeze)
             train_conv_layers = clone_model(base_model, [start_train_conv_node_name], [last_conv_node_name], clone_method=CloneMethod.clone)
-            # TODO: it would be nicer to use Sequential(), but then the node name cannot be found in subsequent cloning
+            # TODO: it would be nicer to use Sequential(), but then the node name cannot be found in subsequent cloning currently
             # conv_layers = Sequential(fixed_conv_layers, train_conv_layers)
             conv_out_f = fixed_conv_layers(image_input)
             conv_out = train_conv_layers(conv_out_f)
@@ -495,7 +509,7 @@ def train_faster_rcnn_alternating(debug_output=False):
         rpn_rois = rpn_net.outputs[0]
         rpn_losses = rpn_net.outputs[1] # required for training rpn in stage 2
 
-        ptl = user_function(ProposalTargetLayer(rpn_rois, roi_input, num_classes=num_classes))
+        ptl = user_function(ProposalTargetLayer(rpn_rois, roi_input, num_classes=num_classes, im_info=im_info, cfg=cfg))
         rois = alias(ptl.outputs[0], name='rpn_target_rois')
         labels = alias(ptl.outputs[1], name='label_targets')
         bbox_targets = alias(ptl.outputs[2], name='bbox_targets')
