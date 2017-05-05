@@ -1860,7 +1860,7 @@ def optimized_rnnstack(operand, weights, hidden_size, num_layers,
     # FIXME figure out how to only SKIP the doctest in CPU
     from cntk.cntk_py import optimized_rnnstack
     operand = sanitize_input(operand)
-    if recurrent_op not in set(['lstm','gru','relu','tanh']):
+    if recurrent_op not in set(['lstm','gru','rnnReLU','rnnTanh']):
         raise(ValueError('unsupported recurrent_op value "%s"'%recurrent_op))
     return optimized_rnnstack(operand, weights, hidden_size, num_layers,
                        bidirectional, recurrent_op, name)

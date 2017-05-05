@@ -22,7 +22,7 @@ def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
     Returns:
         converted rnn function on GEMM based implementation that can be used on CPU
     '''
-    if recurrent_op != 'lstm':
+    if recurrent_op not in ['lstm', 'rnnReLU', 'rnnTanh']:
         raise(ValueError('unsupported recurrent_op value "%s"'%recurrent_op))
     #note that cudnn GRU is different from standard GRU so no conversion unless creating a new type of GRU cell for CPU
 
@@ -49,6 +49,13 @@ def from_cudnn(cudnn_rnn, hidden_size, num_layers, bidirectional, recurrent_op):
             rnn_lambda = lambda x, i : C.splice(C.layers.Recurrence(C.layers.LSTM(hidden_size, name=rnn_name+'_fw'+i))(x), C.layers.Recurrence(C.layers.LSTM(hidden_size, name=rnn_name+'_bw'+i), go_backwards=True)(x))
         else:
             rnn_lambda = lambda x, i : C.layers.Recurrence(C.layers.LSTM(hidden_size, name=rnn_name+"_"+i))(x)
+    elif recurrent_op == 'rnnReLU' or recurrent_op == 'rnnTanh':
+        num_gates = 1
+        activation = C.relu if recurrent_op == 'rnnReLU' else C.tanh
+        if bidirectional:
+            rnn_lambda = lambda x, i : C.splice(C.layers.Recurrence(C.layers.RNNUnit(hidden_size, activation=activation, name=rnn_name+'_fw'+i))(x), C.layers.Recurrence(C.layers.RNNUnit(hidden_size, activation=activation, name=rnn_name+'_bw'+i), go_backwards=True)(x))
+        else:
+            rnn_lambda = lambda x, i : C.layers.Recurrence(C.layers.RNNUnit(hidden_size, activation=activation, name=rnn_name+"_"+i))(x)
 
     noncudnn_func = rnn_lambda(input_var, '0')
 

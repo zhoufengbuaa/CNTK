@@ -7,7 +7,9 @@ TEST_CONFIG = [
     (1, True,  'lstm'),
     (1, False, 'lstm'),
     (2, False, 'lstm'),
-    (3, True,  'lstm')
+    (3, True,  'lstm'),
+    (4, True,  'rnnReLU'),
+    (4, False, 'rnnTanh'),
 ]
 
 @pytest.mark.parametrize("num_layers, bidirectional, recurrent_op", TEST_CONFIG)
