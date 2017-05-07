@@ -21,6 +21,11 @@ have_nccl=no
 nccl_path=
 nccl_check=include/nccl.h
 
+# Gloo communication library
+have_gloo=no
+gloo_path=
+gloo_check=gloo/allreduce_ring.h
+
 # CNTK Custom MKL Version
 cntk_custom_mkl_version=3
 
@@ -116,6 +121,7 @@ default_boost="boost-1.60.0"
 
 default_cudas="cuda-8.0 cuda-7.5"
 default_nccls="nccl"
+default_gloos="gloo"
 default_kaldis="kaldi-trunk kaldi-c024e8aa"
 default_gdk_includes="include/nvidia/gdk"
 default_gdk_nvml_libs="src/gdk/nvml/lib"
@@ -186,6 +192,11 @@ function find_protobuf ()
 function find_nccl ()
 {
     find_dir "$default_nccls" "$nccl_check"
+}
+
+function find_gloo ()
+{
+    find_dir "$default_gloos" "$gloo_check"
 }
 
 function find_cuda ()
@@ -353,6 +364,7 @@ function show_help ()
     echo "  --with-gdk-nvml-lib[=directory] $(show_default $(find_gdk_nvml_lib))"
     echo "  --with-cudnn[=directory] $(show_default $(find_cudnn))"
     echo "  --with-nccl[=directory] $(show_default $(find_nccl))"
+    echo "  --with-gloo[=directory] $(show_default $(find_gloo))"
     echo "  --with-mkl[=directory] $(show_default $(find_mkl))"
     echo "  --with-mkl-sequential[=directory] $(show_default $(find_mkl))"
     echo "  --with-openblas[=directory] (experimental) $(show_default $(find_openblas))"
@@ -681,6 +693,28 @@ do
                 fi
             fi
             ;;
+        --with-gloo*)
+            have_gloo=yes
+            if test x$optarg = x
+            then
+                gloo_path=$(find_gloo)
+		if test x$gloo_path = x
+		then
+		    echo "Cannot find Gloo directory"
+		    echo "Please specify a value for --with-gloo"
+		    echo "Gloo can be downloaded from https://github.com/facebookincubator/gloo"
+		    exit 1
+		fi
+	    else
+		if test $(check_dir $optarg $gloo_check) = yes
+		then
+		    gloo_path=$optarg
+		else
+	            echo "Invalid Gloo directory $optarg"
+		    exit 1
+		fi
+	    fi
+            ;;
         --with-mkl*)
             have_mkl=yes
             mathlib=mkl
@@ -1006,6 +1040,15 @@ then
     fi
 fi
 
+# Gloo's advantage is on GPU training on multiple machines
+if test $enable_cuda = yes && test x$gloo_path = x
+then
+    gloo_path=$(find_gloo)
+    if test x$gloo_path != x; then
+        echo Found Gloo at $gloo_path
+    fi
+fi
+
 if test x$opencv_path = x
 then
     opencv_path=$(find_opencv)
@@ -1113,6 +1156,7 @@ if test $enable_cuda = yes ; then
     echo CUB_PATH=$cub_path >> $config
     echo CUDNN_PATH=$cudnn_path >> $config
     [ -z "$nccl_path" ] || echo NCCL_PATH=$nccl_path >> $config
+    [ -z "$gloo_path" ] || echo GLOO_PATH=$gloo_path >> $config
 fi
 if test $enable_python = yes ; then
     echo PYTHON_SUPPORT=true >> $config

@@ -163,6 +163,12 @@ ifdef CUDA_PATH
     LIBS_LIST += nccl
     COMMON_FLAGS += -DUSE_NCCL
   endif
+
+# Set up Gloo if needed
+  ifdef GLOO_PATH
+    INCLUDEPATH += $(GLOO_PATH)/gloo
+    LIBPATH += $(GLOO_PATH)
+    COMMON_FLAGS += -DUSE_GLOO
 else
   DEVICE = cpu
 
