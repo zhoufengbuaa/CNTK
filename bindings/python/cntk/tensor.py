@@ -79,12 +79,19 @@ class TensorOpsMixin(object):
         from . import ops
         return ops.negate(self)
 
-    # TODO __xor__, __rxor__, __pow__, __rpow__,  __invert__
+    # TODO
+    # __xor__, __rxor__
+    # __pow__, __rpow__,  __invert__
+    # __and__, __rand__, __or__, __ror__,
 
     # Comparison operators are not exposed yet, because of __eq__ being
     # required to allow comparison of Variables on C++ so that we can say
     # 'for var in variables'.
-    # __lt__, __le__, __gt__, __ge__, __and__, __rand__, __or__, __ror__,
+    # __lt__, __le__, __gt__, __ge__
+
+    def __eq__(self, other):
+        from . import ops
+        return ops.equal(self, other)
 
     def __getitem__(self, arg):
         '''
@@ -93,7 +100,7 @@ class TensorOpsMixin(object):
         from . import ops
 
         # int or slice: normalize into a tuple of int or tuple of slice
-        if not isinstance(arg, tuple): 
+        if not isinstance(arg, tuple):
             arg = (arg,)
         r = self
         axis0 = 0
