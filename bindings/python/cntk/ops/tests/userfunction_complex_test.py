@@ -13,7 +13,7 @@ import numpy as np
 from cntk import *
 from cntk.learners import *
 from cntk.ops import *
-from cntk.ops.tests.ops_test_utils import cntk_device
+from cntk.ops.tests.ops_test_utils import cntk_device, mem_used
 from cntk.ops.functions import UserFunction
 
 np.random.seed(0)
@@ -94,8 +94,8 @@ def train(nonlinearity, num_hidden_layers, device_id):
     trainer = Trainer(z, (loss, eval_error), [learner])
 
 
-    minibatch_size = 25
-    num_samples = 2500
+    minibatch_size = 2000
+    num_samples = 50000
     num_minibatches_to_train = num_samples / minibatch_size
 
     training_progress_output_freq = 20
@@ -103,7 +103,11 @@ def train(nonlinearity, num_hidden_layers, device_id):
     losses = []
     errors = []
 
-    for i in range(0, int(num_minibatches_to_train)):
+    TAKE_MEM_STAMP_AT_STEP = 5
+    mem_stamp = None
+
+    i = 0
+    while i < num_minibatches_to_train:
         features, labels = generate_random_data_sample(minibatch_size, input_dim, num_output_classes)
 
         # Specify the input variables mapping in the model to actual minibatch data for training
@@ -111,9 +115,21 @@ def train(nonlinearity, num_hidden_layers, device_id):
                 device=cntk_device(device_id))
         batchsize, loss, error = print_training_progress(trainer, i,
                                                          training_progress_output_freq)
+        if i == TAKE_MEM_STAMP_AT_STEP:
+            mem_stamp = mem_used()
+        elif i > TAKE_MEM_STAMP_AT_STEP:
+            mem = mem_used()
+            if mem/mem_stamp > 1.05:
+                raise ValueError('Memory leak detected')
+
         if not (loss == "NA" or error =="NA"):
             losses.append(loss)
             errors.append(error)
+
+        i += 1
+
+    # Make sure that we had a chance to check for mem leaks
+    assert i > TAKE_MEM_STAMP_AT_STEP
 
     return losses, errors
 
