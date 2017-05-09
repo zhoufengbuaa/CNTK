@@ -77,7 +77,7 @@ def test_language_understanding(device_id):
 
     from _cntk_py import set_computation_network_trace_level, set_fixed_random_seed, force_deterministic_algorithms
     #set_computation_network_trace_level(1)
-    set_fixed_random_seed(1) # to become invariant to initialization order, which is a valid change
+    set_fixed_random_seed(42) # to become invariant to initialization order, which is a valid change
     # BUGBUG: This ^^ currently seems to have no impact; the two BN models below should be identical in training
     force_deterministic_algorithms()
 
