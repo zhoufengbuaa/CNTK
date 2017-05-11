@@ -866,10 +866,10 @@ public:
         m_GammaCal.doCTC(Value(), *m_logSoftmaxOfRight, *m_maxIndexes, *m_maxValues, *m_CTCposterior, InputRef(0).GetMBLayout(), m_blankTokenId, m_delayConstraint);
 
 #if NANCHECK
-        functionValues.HasNan("ForwardBackwardNode");
+        Value().HasNan("ForwardBackwardNode");
 #endif
 #if DUMPOUTPUT
-        functionValues.Print("ForwardBackwardNode");
+        Value().Print("ForwardBackwardNode");
 #endif
     }
 
