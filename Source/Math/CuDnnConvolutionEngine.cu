@@ -252,7 +252,22 @@ protected:
             }
             return cudnnGetConvolutionForwardAlgorithm(*m_cudnn, m_inT, *m_kernelT, *m_conv, m_outT, CUDNN_CONVOLUTION_FWD_NO_WORKSPACE, 0, &algo);
         };
-        FindBestAlgo(batchSize, m_fwdAlgo, finder, staticFinder, workspace);
+        //FindBestAlgo(batchSize, m_fwdAlgo, finder, staticFinder, workspace);
+        size_t algoSize;
+        cudnnStatus_t tag = cudnnGetConvolutionForwardWorkspaceSize(*m_cudnn, m_inT, *m_kernelT, *m_conv, m_outT, CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM, &algoSize);
+        if (tag == CUDNN_STATUS_SUCCESS)
+        {
+            m_fwdAlgo.selectedAlgo = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+            m_fwdAlgo.AlgoWorkspaceSize = algoSize;
+            m_fwdAlgo.MBSizeForCurrentAlgo = batchSize;
+            m_fwdAlgo.maxMBSizeSeen = batchSize;
+            m_fwdAlgo.maxAlgo = m_fwdAlgo.selectedAlgo;
+            if (workspace.BufferSize() < algoSize)
+            {
+                workspace.Resize((algoSize + sizeof(ElemType) - 1) / sizeof(ElemType), 1);
+            }
+            m_fwdAlgo.MBSizeForCurrentAlgo = batchSize;
+        }
         // Perform forward convolution operation.
         CUDNN_CALL(cudnnConvolutionForward(*m_cudnn, &C::One, m_inT, ptr(in), *m_kernelT, ptr(kernel), *m_conv, m_fwdAlgo.selectedAlgo, ptr(workspace), workspace.BufferSize(), &C::Zero, m_outT, ptr(out)));
     }
@@ -299,7 +314,22 @@ protected:
             }
             return cudnnGetConvolutionBackwardDataAlgorithm(*m_cudnn, *m_kernelT, m_outT, *m_conv, m_inT, CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE, 0, &algo);
         };
-        FindBestAlgo(batchSize, m_backDataAlgo, finder, staticFinder, workspace);
+        //FindBestAlgo(batchSize, m_backDataAlgo, finder, staticFinder, workspace);
+        size_t algoSize;
+        cudnnStatus_t tag = cudnnGetConvolutionBackwardDataWorkspaceSize(*m_cudnn, *m_kernelT, m_outT, *m_conv, m_inT, CUDNN_CONVOLUTION_BWD_DATA_ALGO_1, &algoSize);
+        if (tag == CUDNN_STATUS_SUCCESS)
+        {
+            m_backDataAlgo.selectedAlgo = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+            m_backDataAlgo.AlgoWorkspaceSize = algoSize;
+            m_backDataAlgo.MBSizeForCurrentAlgo = batchSize;
+            m_backDataAlgo.maxMBSizeSeen = batchSize;
+            m_backDataAlgo.maxAlgo = m_backDataAlgo.selectedAlgo;
+            if (workspace.BufferSize() < algoSize)
+            {
+                workspace.Resize((algoSize + sizeof(ElemType) - 1) / sizeof(ElemType), 1);
+            }
+            m_backDataAlgo.MBSizeForCurrentAlgo = batchSize;
+        }
         // Compute gradients with respect to the output tensor (data).
         CUDNN_CALL(cudnnConvolutionBackwardData(*m_cudnn, &C::One, *m_kernelT, ptr(kernel), m_outT, ptr(srcGrad), *m_conv, m_backDataAlgo.selectedAlgo, ptr(workspace), workspace.BufferSize(), accumulateGradient ? &C::One : &C::Zero, m_inT, ptr(grad)));
     }
@@ -346,7 +376,22 @@ protected:
             }
             return cudnnGetConvolutionBackwardFilterAlgorithm(*m_cudnn, m_inT, m_outT, *m_conv, *m_kernelT, CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE, 0, &algo);
         };
-        FindBestAlgo(batchSize, m_backFiltAlgo, finder, staticFinder, workspace);
+        //FindBestAlgo(batchSize, m_backFiltAlgo, finder, staticFinder, workspace);
+        size_t algoSize;
+        cudnnStatus_t tag = cudnnGetConvolutionBackwardFilterWorkspaceSize(*m_cudnn, m_inT, m_outT, *m_conv, *m_kernelT, CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1, &algoSize);
+        if (tag == CUDNN_STATUS_SUCCESS)
+        {
+            m_backFiltAlgo.selectedAlgo = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+            m_backFiltAlgo.AlgoWorkspaceSize = algoSize;
+            m_backFiltAlgo.MBSizeForCurrentAlgo = batchSize;
+            m_backFiltAlgo.maxMBSizeSeen = batchSize;
+            m_backFiltAlgo.maxAlgo = m_backFiltAlgo.selectedAlgo;
+            if (workspace.BufferSize() < algoSize)
+            {
+                workspace.Resize((algoSize + sizeof(ElemType) - 1) / sizeof(ElemType), 1);
+            }
+            m_backFiltAlgo.MBSizeForCurrentAlgo = batchSize;
+        }
         // Compute gradients with respect to the output tensor (data).
         CUDNN_CALL(cudnnConvolutionBackwardFilter(*m_cudnn, &C::One, m_inT, ptr(in), m_outT, ptr(srcGrad), *m_conv, m_backFiltAlgo.selectedAlgo, ptr(workspace), workspace.BufferSize(), accumulateGradient ? &C::One : &C::Zero, *m_kernelT, ptr(kernelGrad)));
     }
