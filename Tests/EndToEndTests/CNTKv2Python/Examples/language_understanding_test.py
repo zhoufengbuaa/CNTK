@@ -33,14 +33,14 @@ def run_model_test(what, model, expected_train):
 
 def create_test_model():
     # this selects additional nodes and alternative paths
-    #with default_options(enable_self_stabilization=True, use_peepholes=True):
-    return Sequential([
-        Embedding(emb_dim),
-        BatchNormalization(),
-        Recurrence(LSTM(hidden_dim, cell_shape=hidden_dim+50), go_backwards=True),
-        BatchNormalization(map_rank=1),
-        Dense(num_labels)
-    ])
+    with default_options(enable_self_stabilization=True, use_peepholes=True):
+        return Sequential([
+            Embedding(emb_dim),
+            BatchNormalization(),
+            Recurrence(LSTM(hidden_dim, cell_shape=hidden_dim+50), go_backwards=True),
+            BatchNormalization(map_rank=1),
+            Dense(num_labels)
+        ])
 
 def with_lookahead():
     x = placeholder()
@@ -228,14 +228,14 @@ def test_language_understanding(device_id):
             ]), [0.0579573500457558, 0.3214986774820327])
 
         # test of a config like in the example but with additions to test many code paths
-        #with default_options(enable_self_stabilization=True, use_peepholes=True):
-        run_model_test('alternate paths', Sequential([
-        Embedding(emb_dim),
-        BatchNormalization(),
-        Recurrence(LSTM(hidden_dim, cell_shape=hidden_dim+50), go_backwards=True),
-        BatchNormalization(map_rank=1),
-            Dense(num_labels)
-        ]), [0.08574360112032389, 0.41847621578367716])
+        with default_options(enable_self_stabilization=True, use_peepholes=True):
+                run_model_test('alternate paths', Sequential([
+                Embedding(emb_dim),
+                BatchNormalization(),
+                Recurrence(LSTM(hidden_dim, cell_shape=hidden_dim+50), go_backwards=True),
+                BatchNormalization(map_rank=1),
+                    Dense(num_labels)
+                ]), [0.08574360112032389, 0.41847621578367716])
 
     # test of the example itself
     # this emulates the main code in the PY file
