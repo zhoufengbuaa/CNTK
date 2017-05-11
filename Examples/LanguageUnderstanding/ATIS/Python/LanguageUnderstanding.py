@@ -51,26 +51,26 @@ def create_reader(path, is_training):
 # TODO: separate slot and intent tagging; maybe do multi-task learning
 def create_model_function():
   from cntk.ops.sequence import last
-  with default_options(enable_self_stabilization=True):  # inject an option to mimic the BS version identically; remove some day
-    return Sequential([
-        Label('input'),
-        Embedding(emb_dim, name='embed'),
-        Label('embedded_input'),
-        Stabilizer(),
-        Recurrence(LSTM(hidden_dim)),
-        # For illustration, variations of Recurrence(LSTM(...)) include
-        #  - GRU
-        #  - RNN
-        #  - bidirectional LSTM
-        # which would be invoked as follows:
-        #Recurrence(GRU(hidden_dim)),
-        #Recurrence(RNNUnit(hidden_dim, activation=relu)),
-        #(Recurrence(LSTM(hidden_dim)), Recurrence(LSTM(hidden_dim), go_backwards=True)), splice,
-        Stabilizer(),
-        Label('hidden_representation'),
-        Dense(num_labels, name='out_projection')
-        #last, Dense(num_intents)    # for intent classification
-    ])
+  #with default_options(enable_self_stabilization=True):  # inject an option to mimic the BS version identically; remove some day
+  return Sequential([
+      Label('input'),
+      Embedding(emb_dim, name='embed'),
+      Label('embedded_input'),
+      Stabilizer(),
+      Recurrence(LSTM(hidden_dim)),
+      # For illustration, variations of Recurrence(LSTM(...)) include
+      #  - GRU
+      #  - RNN
+      #  - bidirectional LSTM
+      # which would be invoked as follows:
+      #Recurrence(GRU(hidden_dim)),
+      #Recurrence(RNNUnit(hidden_dim, activation=relu)),
+      #(Recurrence(LSTM(hidden_dim)), Recurrence(LSTM(hidden_dim), go_backwards=True)), splice,
+      Stabilizer(),
+      Label('hidden_representation'),
+      Dense(num_labels, name='out_projection')
+      #last, Dense(num_intents)    # for intent classification
+  ])
 
 
 ########################
