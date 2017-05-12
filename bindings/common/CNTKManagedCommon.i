@@ -385,16 +385,16 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %include "CNTKExceptionHandling.i"
 
 // class DeviceDescriptor
-%rename (GetAllDevices) CNTK::DeviceDescriptor::AllDevices;
-%rename (GetCPUDevice) CNTK::DeviceDescriptor::CPUDevice;
-%rename (GetDeviceType) CNTK::DeviceDescriptor::Type;
-%rename (GetId) CNTK::DeviceDescriptor::Id;
+%rename (_AllDevices) CNTK::DeviceDescriptor::AllDevices;
+%rename (_CPUDevice) CNTK::DeviceDescriptor::CPUDevice;
+%rename (_DeviceType) CNTK::DeviceDescriptor::Type;
+%rename (_Id) CNTK::DeviceDescriptor::Id;
 %rename (_SetExcludedDevices) CNTK::DeviceDescriptor::SetExcludedDevices;
 %rename (AreEqualDeviceDescriptor) CNTK::operator==(const DeviceDescriptor& left, const DeviceDescriptor& right);
 
 // class Axis
-%rename (GetName) CNTK::Axis::Name;
-%rename (IsOrderedAxis) CNTK::Axis::IsOrdered;
+%rename (_Name) CNTK::Axis::Name;
+%rename (_IsOrdered) CNTK::Axis::IsOrdered;
 %rename (AreEqualAxis) CNTK::operator==(const Axis& first, const Axis& second);
 %ignore_function CNTK::Axis::DefaultDynamicAxis();
 %ignore_function CNTK::Axis::OperandSequenceAxis();
@@ -406,14 +406,14 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 
 // class Function
 %ignore CNTK::Function::BlockArgumentsMapping;
-%rename (GetName) CNTK::Function::Name;
-%rename (GetUid) CNTK::Function::Uid;
-%rename (GetRootFunction) CNTK::Function::RootFunction;
-%rename (GetInputs) CNTK::Function::Inputs;
-%rename (GetOutput) CNTK::Function::Output;
-%rename (GetOutputs) CNTK::Function::Outputs;
-%rename (GetArguments) CNTK::Function::Arguments;
-%rename (GetOpName) CNTK::Function::OpName;
+%rename (_Name) CNTK::Function::Name;
+%rename (_Uid) CNTK::Function::Uid;
+%rename (_RootFunction) CNTK::Function::RootFunction;
+%rename (_Inputs) CNTK::Function::Inputs;
+%rename (_Output) CNTK::Function::Output;
+%rename (_Outputs) CNTK::Function::Outputs;
+%rename (_Arguments) CNTK::Function::Arguments;
+%rename (_OpName) CNTK::Function::OpName;
 %rename (_Clone) CNTK::Function::Clone;
 %rename (_FindAllWithName) CNTK::Function::FindAllWithName;
 %rename (_IsComposite) CNTK::Function::IsComposite;
@@ -478,23 +478,23 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 // class Varaiable
 %ignore CNTK::Variable::Variable;
 %rename ("%s") CNTK::Variable::Variable(const FunctionPtr& function);
-%rename (GetShape) CNTK::Variable::Shape;
-%rename (GetName) CNTK::Variable::Name;
-%rename (GetVariableKind) CNTK::Variable::Kind;
-%rename (GetDynamicAxes) CNTK::Variable::DynamicAxes;
+%rename (_Shape) CNTK::Variable::Shape;
+%rename (_Name) CNTK::Variable::Name;
+%rename (_VariableKind) CNTK::Variable::Kind;
+%rename (_DynamicAxes) CNTK::Variable::DynamicAxes;
 %rename (_IsSparse) CNTK::Variable::IsSparse;
 %rename (_IsInput) CNTK::Variable::IsInput;
 %rename (_IsOutput) CNTK::Variable::IsOutput;
 %rename (_IsParameter) CNTK::Variable::IsParameter;
 %rename (_IsConstant) CNTK::Variable::IsConstant;
 %rename (_IsPlaceholder) CNTK::Variable::IsPlaceholder;
-%rename (GetOwner) CNTK::Variable::Owner;
+%rename (_Owner) CNTK::Variable::Owner;
 %rename (AreEqualVariable) CNTK::operator==(const Variable& first, const Variable& second);
 
 // class NDShape
-%rename (GetDimensions) CNTK::NDShape::Dimensions;
-%rename (GetRank) CNTK::NDShape::Rank;
-%rename (GetTotalSize) CNTK::NDShape::TotalSize;
+%rename (_Dimensions) CNTK::NDShape::Dimensions;
+%rename (_Rank) CNTK::NDShape::Rank;
+%rename (_TotalSize) CNTK::NDShape::TotalSize;
 %rename (AreEqualShape) CNTK::operator==(const NDShape& first, const NDShape& second);
 %rename (_IsUnknown) CNTK::NDShape::IsUnknown;
 %rename (_HasInferredDimension) CNTK::NDShape::HasInferredDimension;
@@ -505,7 +505,7 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %ignore CNTK::NDShape::FreeDimension;
 
 %extend CNTK::NDShape {
-    size_t GetDimensionSize(size_t axisId)
+    size_t _DimensionSize(size_t axisId)
     {
         return (*self)[axisId];
     }
@@ -514,12 +514,11 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 // class NDMask
 // Todo: add correct typemap as they might be useful in future.
 %ignore_function CNTK::NDMask::DataBuffer;
-%rename (GetMaskedCount) CNTK::NDMask::MaskedCount;
-%rename (GetDevice) CNTK::NDMask::Device;
-%rename (GetShape) CNTK::NDMask::Shape;
+%rename (_MaskedCount) CNTK::NDMask::MaskedCount;
+%rename (_Device) CNTK::NDMask::Device;
+%rename (_Shape) CNTK::NDMask::Shape;
 %rename (_InvalidateSection) CNTK::NDMask::InvalidateSection;
 %rename (_MarkSequenceBegin) CNTK::NDMask::MarkSequenceBegin;
-%rename (_InvalidateSection) CNTK::NDMask::InvalidateSection;
 
 // class Value
 %apply int INPUT[]  { int *colStarts }
@@ -527,8 +526,8 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %apply float INPUT[]  { float *nonZeroValues }
 %apply double INPUT[]  { double *nonZeroValues }
 
-%rename (GetDevice) CNTK::Value::Device;
-%rename (GetShape) CNTK::Value::Shape;
+%rename (_Device) CNTK::Value::Device;
+%rename (_Shape) CNTK::Value::Shape;
 %rename (_IsSparse) CNTK::Value::IsSparse;
 %rename (_IsReadOnly) CNTK::Value::IsReadOnly;
 %rename (_MaskedCount) CNTK::Value::MaskedCount;
@@ -578,8 +577,8 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
     }
 }
 
-%rename (GetDevice) CNTK::NDArrayView::Device;
-%rename (GetShape) CNTK::NDArrayView::Shape;
+%rename (_Device) CNTK::NDArrayView::Device;
+%rename (_Shape) CNTK::NDArrayView::Shape;
 %rename (_IsSparse) CNTK::NDArrayView::IsSparse;
 %rename (_IsReadOnly) CNTK::NDArrayView::IsReadOnly;
 %rename (_SliceView) CNTK::NDArrayView::SliceView;

@@ -31,11 +31,11 @@ public class Main {
         Variable outputVar = modelFunc.getOutputs().get(0);
         Variable inputVar = modelFunc.getArguments().get(0);
 
-        NDShape inputShape = inputVar.GetShape();
+        NDShape inputShape = inputVar.getShape();
         int imageWidth = inputShape.getDimensions().get(0).intValue();
         int imageHeight = inputShape.getDimensions().get(1).intValue();
         int imageChannels = inputShape.getDimensions().get(2).intValue();
-        int imageSize = ((int) inputShape.GetTotalSize());
+        int imageSize = ((int) inputShape.getTotalSize());
 
         System.out.println("EvaluateSingleImage");
 
@@ -86,7 +86,7 @@ public class Main {
         // Start evaluation on the device
         modelFunc.Evaluate(inputDataMap, outputDataMap, device);
 
-        // Get evaluate result as dense output
+        // get evaluate result as dense output
         FloatVectorVector outputBuffer = new FloatVectorVector();
         outputDataMap.getitem(outputVar).CopyVariableValueToFloat(outputVar, outputBuffer);
 
