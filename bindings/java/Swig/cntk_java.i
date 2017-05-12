@@ -44,7 +44,7 @@
     }
 
     public DeviceKind getDeviceType() {
-        return _DeviceType();
+        return _Type();
     }
 
     public long getId() {
@@ -71,7 +71,7 @@
 
     @Override
     public int hashCode() {
-        return _DeviceType().hashCode();
+        return _Type().hashCode();
     }
 %}
 
@@ -221,7 +221,7 @@
     }
 
     public VariableKind getVariableKind() {
-        return _VariableKind();
+        return _Kind();
     }
 
     public AxisVector getDynamicAxes() {
