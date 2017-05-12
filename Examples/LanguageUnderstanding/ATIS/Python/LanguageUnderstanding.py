@@ -143,7 +143,7 @@ def train(reader, model, max_epochs):
     # iteration parameters  --needed here because learner schedule needs it
     epoch_size = 36000
     minibatch_size = 70
-    #epoch_size = 1000 ; max_epochs = 1 # uncomment for faster testing
+    epoch_size = 200 ; max_epochs = 1 # uncomment for faster testing
 
     # SGD parameters
     learner = fsadagrad(criterion.parameters,
