@@ -39,18 +39,6 @@
         return ret;
     }
 
-    public static DeviceDescriptor getCPUDevice() {
-        return _CPUDevice();
-    }
-
-    public DeviceKind getDeviceType() {
-        return _Type();
-    }
-
-    public long getId() {
-        return _Id();
-    }
-
     public void setExcludedDevices(DeviceDescriptorVector ddv) {
         _SetExcludedDevices(ddv);
     }
@@ -71,15 +59,11 @@
 
     @Override
     public int hashCode() {
-        return _Type().hashCode();
+        return getType().hashCode();
     }
 %}
 
 %typemap(javacode) CNTK::Axis %{
-
-    public String getName() {
-        return _Name();
-    }
 
     public boolean isOrdered() {
         return _IsOrdered();
@@ -101,10 +85,10 @@
 
     @Override
     public int hashCode() {
-        if (this.IsDynamicAxis()) {
-            return _Name().hashCode();
+        if (this.isDynamicAxis()) {
+            return getName().hashCode();
         } else {
-            return this.StaticAxisIndex();
+            return this.getStaticAxisIndex();
         }
     }
 %}
@@ -112,21 +96,9 @@
 
 %typemap(javacode) CNTK::Function %{
 
-    public String getName() {
-        return _Name();
-    }
-
-    public String getUid() {
-        return _Uid();
-    }
-
-    public Function getRootFunction() {
-        return _RootFunction();
-    }
-
-    public static Function Load(byte[] modelBuffer, DeviceDescriptor computeDevice)
+    public static Function load(byte[] modelBuffer, DeviceDescriptor computeDevice)
     {
-        return Load(modelBuffer, (long)modelBuffer.length, computeDevice);
+        return load(modelBuffer, (long)modelBuffer.length, computeDevice);
     }
 
     // TODO: look at C# implementation and make it look more like that
@@ -148,10 +120,6 @@
             }
         }
         return inputList;
-    }
-
-    public Variable getOutput() {
-        return _Output();
     }
 
     public java.util.List<Variable> getOutputs() {
@@ -176,18 +144,6 @@
         return argumentList;
     }
 
-    public String getOpName() {
-        return _OpName();
-    }
-
-    public Function clone() {
-        return _Clone();
-    }
-
-    public FunctionPtrVector findAllWithName(String name) {
-        return _FindAllWithName(name);
-    }
-
     public boolean isComposite() {
         return _IsComposite();
     }
@@ -200,7 +156,7 @@
         return _IsBlock();
     }
 
-    public static Function Combine(java.util.ArrayList<Variable> outputVariable) {
+    public static Function combine(java.util.ArrayList<Variable> outputVariable) {
         VariableVector varVect = new VariableVector();
         for (int i = 0; i < outputVariable.size(); ++i)
         {
@@ -211,18 +167,6 @@
 %}
 
 %typemap(javacode) CNTK::Variable %{
-
-    public NDShape getShape() {
-        return _Shape();
-    }
-
-    public String getName() {
-        return _Name();
-    }
-
-    public VariableKind getVariableKind() {
-        return _Kind();
-    }
 
     public AxisVector getDynamicAxes() {
         return _DynamicAxes();
@@ -252,10 +196,6 @@
         return _IsPlaceholder();
     }
 
-    public Function getOwner() {
-        return _Owner();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -278,28 +218,12 @@
 
 %typemap(javacode) CNTK::NDShape %{
 
-    public long getRank() {
-        return _Rank();
-    }
-
-    public long getTotalSize() {
-        return _TotalSize();
-    }
-
     public boolean isUnknown() {
         return _IsUnknown();
     }
 
-    public boolean hasInferredDimension() {
-        return _HasInferredDimension();
-    }
-
-    public boolean hasFreeDimension() {
-        return _HasFreeDimension();
-    }
-
     public java.util.ArrayList<Long> getDimensions(){
-        java.util.ArrayList<Long> ret = new java.util.ArrayList<Long>((int)_Rank());
+        java.util.ArrayList<Long> ret = new java.util.ArrayList<Long>((int)getRank());
         for (int i = 0; i < _Dimensions().size(); ++i ) {
             ret.add((Long)_Dimensions().get(i));
         }
@@ -328,18 +252,6 @@
 
 %typemap(javacode) CNTK::NDMask %{
 
-    public long getMaskedCount() {
-        return _MaskedCount();
-    }
-
-    public DeviceDescriptor getDevice() {
-        return _Device();
-    }
-
-    public NDShape getShape() {
-        return _Shape();
-    }
-
     public void invalidateSection(SizeTVector sectionOffset, NDShape sectionShape) {
         _InvalidateSection(sectionOffset, sectionShape);
     }
@@ -350,36 +262,12 @@
 %}
 
 %typemap(javacode) CNTK::Value %{
-    public DeviceDescriptor getDevice() {
-        return _Device();
-    }
-
-    public NDShape getShape() {
-        return _Shape();
-    }
-
-    public boolean isSparse() {
-        return _IsSparse();
-    }
-
     public boolean isReadOnly() {
         return _IsReadOnly();
-    }
-
-    public long getMaskedCount() {
-        return _MaskedCount();
     }
 %}
 
 %typemap(javacode) CNTK::NDArrayView %{
-    public DeviceDescriptor getDevice() {
-        return _Device();
-    }
-
-    public NDShape getShape() {
-        return _Shape();
-    }
-
     public boolean isSparse() {
         return _IsSparse();
     }

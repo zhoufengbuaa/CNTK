@@ -23,13 +23,26 @@
 %include <arrays_csharp.i>
 #endif
 
+//use when the wrapped method returns an idiomatic type
+//for non-idiomatic types, such as the default collection wrappers use MODIFY_PRIVATE below
+//and then write custom method in the language specific file
+%define MAKE_GETTER(namespace, method)
+    %rename
+    #ifdef SWIGCSHARP
+    (Get ## method)
+    #else
+    (get ## method)
+    #endif
+    namespace##::##method
+%enddef
 
 %define MODIFY_PRIVATE(namespace, method)
     #ifdef SWIGCSHARP
-    %csmethodmodifiers namespace##::##method "private"
+    %csmethodmodifiers
     #else
-    %javamethodmodifiers namespace##::##method "private"
+    %javamethodmodifiers
     #endif
+    namespace##::##method "private";
     %rename (_##method) namespace##::##method
 %enddef
 
@@ -395,17 +408,31 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %include "CNTKExceptionHandling.i"
 
 // class DeviceDescriptor
+MAKE_GETTER(CNTK::DeviceDescriptor, Type);
+MAKE_GETTER(CNTK::DeviceDescriptor, Id);
+MAKE_GETTER(CNTK::DeviceDescriptor, CPUDevice);
 MODIFY_PRIVATE(CNTK::DeviceDescriptor, AllDevices);
-MODIFY_PRIVATE(CNTK::DeviceDescriptor, CPUDevice);
-MODIFY_PRIVATE(CNTK::DeviceDescriptor, Type);
-MODIFY_PRIVATE(CNTK::DeviceDescriptor, Id);
 MODIFY_PRIVATE(CNTK::DeviceDescriptor, SetExcludedDevices);
+#ifdef SWIGJAVA
+%rename (isLocked) CNTK::DeviceDescriptor::IsLocked;
+%rename (getGPUDevice) CNTK::DeviceDescriptor::GPUDevice;
+%rename (useDefaultDevice) CNTK::DeviceDescriptor::UseDefaultDevice;
+%rename (trySetDefaultDevice) CNTK::DeviceDescriptor::TrySetDefaultDevice;
+%rename (toString) CNTK::DeviceDescriptor::AsString;
+#endif
 %rename (AreEqualDeviceDescriptor) CNTK::operator==(const DeviceDescriptor& left, const DeviceDescriptor& right);
 
 // class Axis
-MODIFY_PRIVATE(CNTK::Axis, Name);
+MAKE_GETTER(CNTK::Axis, Name);
+MAKE_GETTER(CNTK::Axis, StaticAxisIndex);
 MODIFY_PRIVATE(CNTK::Axis, IsOrdered);
 %rename (AreEqualAxis) CNTK::operator==(const Axis& first, const Axis& second);
+#ifdef SWIGJAVA
+%rename (isStaticAxis) CNTK::Axis::IsStaticAxis;
+%rename (isDynamicAxis) CNTK::Axis::IsDynamicAxis;
+%rename (endStaticAxis) CNTK::Axis::EndStaticAxis;
+%rename (toString) CNTK::Axis::AsString;
+#endif
 %ignore_function CNTK::Axis::DefaultDynamicAxis();
 %ignore_function CNTK::Axis::OperandSequenceAxis();
 %ignore_function CNTK::Axis::DefaultBatchAxis();
@@ -416,19 +443,33 @@ MODIFY_PRIVATE(CNTK::Axis, IsOrdered);
 
 // class Function
 %ignore CNTK::Function::BlockArgumentsMapping;
-MODIFY_PRIVATE(CNTK::Function, Name);
-MODIFY_PRIVATE(CNTK::Function, Uid);
-MODIFY_PRIVATE(CNTK::Function, RootFunction);
+MAKE_GETTER(CNTK::Function, Name);
+MAKE_GETTER(CNTK::Function, Uid);
+MAKE_GETTER(CNTK::Function, RootFunction);
+MAKE_GETTER(CNTK::Function, Output);
+MAKE_GETTER(CNTK::Function, OpName);
+MAKE_GETTER(CNTK::Function, CurrentVersion);
 MODIFY_PRIVATE(CNTK::Function, Inputs);
-MODIFY_PRIVATE(CNTK::Function, Output);
 MODIFY_PRIVATE(CNTK::Function, Outputs);
 MODIFY_PRIVATE(CNTK::Function, Arguments);
-MODIFY_PRIVATE(CNTK::Function, OpName);
-MODIFY_PRIVATE(CNTK::Function, Clone);
 MODIFY_PRIVATE(CNTK::Function, FindAllWithName);
 MODIFY_PRIVATE(CNTK::Function, IsComposite);
 MODIFY_PRIVATE(CNTK::Function, IsPrimitive);
 MODIFY_PRIVATE(CNTK::Function, IsBlock);
+
+#ifdef SWIGJAVA
+%rename (load) CNTK::Function::Load;
+%rename (combine) CNTK::Function::Combine;
+%rename (clone) CNTK::Function::Clone;
+%rename (evaluate) CNTK::Function::Evaluate;
+%rename (setName) CNTK::Function::SetName;
+%rename (findByName) CNTK::Function::FindByName;
+%rename (findAllWithName) CNTK::Function::FindAllWithName;
+%rename (blockRoot) CNTK::Function::BlockRoot;
+%rename (save) CNTK::Function::Save;
+%rename (restore) CNTK::Function::Restore;
+%rename (toString) CNTK::Function::AsString;
+#endif
 
 %ignore CNTK::Function::Load(const std::wstring& filepath, const DeviceDescriptor& computeDevice = DeviceDescriptor::UseDefaultDevice());
 %ignore CNTK::Function::Load(const char* buffer, size_t length, const DeviceDescriptor& computeDevice = DeviceDescriptor::UseDefaultDevice());
@@ -488,9 +529,11 @@ MODIFY_PRIVATE(CNTK::Function, IsBlock);
 // class Varaiable
 %ignore CNTK::Variable::Variable;
 %rename ("%s") CNTK::Variable::Variable(const FunctionPtr& function);
-MODIFY_PRIVATE(CNTK::Variable, Shape);
-MODIFY_PRIVATE(CNTK::Variable, Name);
-MODIFY_PRIVATE(CNTK::Variable, Kind);
+MAKE_GETTER(CNTK::Variable, Shape);
+MAKE_GETTER(CNTK::Variable, Name);
+MAKE_GETTER(CNTK::Variable, Uid);
+MAKE_GETTER(CNTK::Variable, Kind);
+MAKE_GETTER(CNTK::Variable, Owner);
 MODIFY_PRIVATE(CNTK::Variable, DynamicAxes);
 MODIFY_PRIVATE(CNTK::Variable, IsSparse);
 MODIFY_PRIVATE(CNTK::Variable, IsInput);
@@ -498,17 +541,31 @@ MODIFY_PRIVATE(CNTK::Variable, IsOutput);
 MODIFY_PRIVATE(CNTK::Variable, IsParameter);
 MODIFY_PRIVATE(CNTK::Variable, IsConstant);
 MODIFY_PRIVATE(CNTK::Variable, IsPlaceholder);
-MODIFY_PRIVATE(CNTK::Variable, Owner);
 %rename (AreEqualVariable) CNTK::operator==(const Variable& first, const Variable& second);
+#ifdef SWIGJAVA
+%rename (getDataType) CNTK::Variable::GetDataType;
+%rename (needsGradient) CNTK::Variable::NeedsGradient;
+%rename (toString) CNTK::Variable::AsString;
+%rename (getCurrentValueTimeStamp) CNTK::Variable::CurrentValueTimeStamp;
+#endif
 
 // class NDShape
+MAKE_GETTER(CNTK::NDShape, Rank);
+MAKE_GETTER(CNTK::NDShape, TotalSize);
 MODIFY_PRIVATE(CNTK::NDShape, Dimensions);
-MODIFY_PRIVATE(CNTK::NDShape, Rank);
-MODIFY_PRIVATE(CNTK::NDShape, TotalSize);
-%rename (AreEqualShape) CNTK::operator==(const NDShape& first, const NDShape& second);
 MODIFY_PRIVATE(CNTK::NDShape, IsUnknown);
-MODIFY_PRIVATE(CNTK::NDShape, HasInferredDimension);
-MODIFY_PRIVATE(CNTK::NDShape, HasFreeDimension);
+%rename (AreEqualShape) CNTK::operator==(const NDShape& first, const NDShape& second);
+
+#ifdef SWIGJAVA
+%rename (hasUnboundDimension) CNTK::NDShape::HasUnboundDimension;
+%rename (hasInferredDimension) CNTK::NDShape::HasInferredDimension;
+%rename (hasFreeDimension) CNTK::NDShape::HasFreeDimension;
+%rename (appendShape) CNTK::NDShape::AppendShape;
+%rename (alias) CNTK::NDShape::Alias;
+%rename (copyFrom) CNTK::NDShape::CopyFrom;
+%rename (subShape) CNTK::NDShape::SubShape;
+%rename (toString) CNTK::NDShape::AsString;
+#endif
 
 %ignore CNTK::NDShape::NDShape(const std::initializer_list<size_t>& dimensions);
 %ignore CNTK::NDShape::InferredDimension;
@@ -524,11 +581,18 @@ MODIFY_PRIVATE(CNTK::NDShape, HasFreeDimension);
 // class NDMask
 // Todo: add correct typemap as they might be useful in future.
 %ignore_function CNTK::NDMask::DataBuffer;
-MODIFY_PRIVATE(CNTK::NDMask, MaskedCount);
-MODIFY_PRIVATE(CNTK::NDMask, Device);
-MODIFY_PRIVATE(CNTK::NDMask, Shape);
+MAKE_GETTER(CNTK::NDMask, MaskedCount);
+MAKE_GETTER(CNTK::NDMask, Device);
+MAKE_GETTER(CNTK::NDMask, Shape);
 MODIFY_PRIVATE(CNTK::NDMask, InvalidateSection);
 MODIFY_PRIVATE(CNTK::NDMask, MarkSequenceBegin);
+
+#ifdef SWIGJAVA
+%rename (clear) CNTK::NDMask::Clear;
+%rename (deepClone) CNTK::NDMask::DeepClone;
+%rename (alias) CNTK::NDMask::Alias;
+%rename (copyFrom) CNTK::NDMask::CopyFrom;
+#endif
 
 // class Value
 %apply int INPUT[]  { int *colStarts }
@@ -536,11 +600,38 @@ MODIFY_PRIVATE(CNTK::NDMask, MarkSequenceBegin);
 %apply float INPUT[]  { float *nonZeroValues }
 %apply double INPUT[]  { double *nonZeroValues }
 
-MODIFY_PRIVATE(CNTK::Value, Device);
-MODIFY_PRIVATE(CNTK::Value, Shape);
+MAKE_GETTER(CNTK::Value, Device);
+MAKE_GETTER(CNTK::Value, Shape);
+MAKE_GETTER(CNTK::Value, Data);
+MAKE_GETTER(CNTK::Value, Mask);
 MODIFY_PRIVATE(CNTK::Value, IsSparse);
 MODIFY_PRIVATE(CNTK::Value, IsReadOnly);
 MODIFY_PRIVATE(CNTK::Value, MaskedCount);
+MODIFY_PRIVATE(CNTK::Value, IsValid);
+
+#ifdef SWIGJAVA
+%rename (create) CNTK::Value::Create;
+%rename (getDataType) CNTK::Value::GetDataType;
+%rename (getStorageFormat) CNTK::Value::GetStorageFormat;
+%rename (deepClone) CNTK::Value::DeepClone;
+%rename (alias) CNTK::Value::Alias;
+%rename (copyFrom) CNTK::Value::CopyFrom;
+%rename (erase) CNTK::Value::Erase;
+%rename (copyVariableValueTo) CNTK::Value::CopyVariableValueTo;
+%rename (createDenseFloat) CNTK::Value::CreateDenseFloat;
+%rename (createDenseDouble) CNTK::Value::CreateDenseDouble;
+%rename (createBatchFloat) CNTK::Value::CreateBatchFloat;
+%rename (createBatchDouble) CNTK::Value::CreateBatchDouble;
+%rename (createSequenceFloat) CNTK::Value::CreateSequenceFloat;
+%rename (createSequenceDouble) CNTK::Value::CreateSequenceDouble;
+%rename (createOneHotFloat) CNTK::Value::CreateOneHotFloat;
+%rename (createOneHotDouble) CNTK::Value::CreateOneHotDouble;
+%rename (createBatchFloat) CNTK::Value::CreateBatchFloat;
+%rename (createBatchDouble) CNTK::Value::CreateBatchDouble;
+%rename (copyVariableValueToFloat) CNTK::Value::CopyVariableValueToFloat;
+%rename (copyVariableValueToDouble) CNTK::Value::CopyVariableValueToDouble;
+%rename (toString) CNTK::Value::AsString;
+#endif
 
 %include "CNTKValueExtend.i"
 
@@ -587,8 +678,19 @@ MODIFY_PRIVATE(CNTK::Value, MaskedCount);
     }
 }
 
-MODIFY_PRIVATE(CNTK::NDArrayView, Device);
-MODIFY_PRIVATE(CNTK::NDArrayView, Shape);
+MAKE_GETTER(CNTK::NDArrayView, Device);
+MAKE_GETTER(CNTK::NDArrayView, Shape);
 MODIFY_PRIVATE(CNTK::NDArrayView, IsSparse);
 MODIFY_PRIVATE(CNTK::NDArrayView, IsReadOnly);
 MODIFY_PRIVATE(CNTK::NDArrayView, SliceView);
+#ifdef SWIGJAVA
+%rename (getDataType) CNTK::NDArrayView::GetDataType;
+%rename (getStorageFormat) CNTK::NDArrayView::GetStorageFormat;
+%rename (setValue) CNTK::NDArrayView::SetValue;
+%rename (deepClone) CNTK::NDArrayView::DeepClone;
+%rename (alias) CNTK::NDArrayView::Alias;
+%rename (asShape) CNTK::NDArrayView::AsShape;
+%rename (copyFrom) CNTK::NDArrayView::CopyFrom;
+%rename (changeDevice) CNTK::NDArrayView::ChangeDevice;
+%rename (toString) CNTK::NDArrayView::AsString;
+#endif

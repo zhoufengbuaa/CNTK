@@ -19,7 +19,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         System.out.println("Working Directory = " + System.getProperty("user.dir"));
 
-        DeviceDescriptor device = DeviceDescriptor.UseDefaultDevice();
+        DeviceDescriptor device = DeviceDescriptor.useDefaultDevice();
         File dataPath = new File(args[1]);
 
 
@@ -27,7 +27,7 @@ public class Main {
         // The model resnet20_cifar10_python.dnn is trained by <CNTK>/Examples/Image/Classification/ResNet/Python/Models/TrainResNet_CIFAR10.py
         // Please see README.md in <CNTK>/Examples/Image/Classification/ResNet about how to train the model.
         // Renaming the output model might be necessary
-        Function modelFunc = Function.Load(new File(dataPath, "resnet20_cifar10_python.dnn").getAbsolutePath(), device);
+        Function modelFunc = Function.load(new File(dataPath, "resnet20_cifar10_python.dnn").getAbsolutePath(), device);
         Variable outputVar = modelFunc.getOutputs().get(0);
         Variable inputVar = modelFunc.getArguments().get(0);
 
@@ -74,21 +74,21 @@ public class Main {
         FloatVectorVector floatVecVec = new FloatVectorVector();
         floatVecVec.add(floatVec);
         // Create input data map
-        Value inputVal = Value.CreateDenseFloat(inputShape, floatVecVec, device);
+        Value inputVal = Value.createDenseFloat(inputShape, floatVecVec, device);
         UnorderedMapVariableValuePtr inputDataMap = new UnorderedMapVariableValuePtr();
-        inputDataMap.Add(inputVar, inputVal);
+        inputDataMap.add(inputVar, inputVal);
 
         // Create output data map. Using null as Value to indicate using system allocated memory.
         // Alternatively, create a Value object and add it to the data map.
         UnorderedMapVariableValuePtr outputDataMap = new UnorderedMapVariableValuePtr();
-        outputDataMap.Add(outputVar, null);
+        outputDataMap.add(outputVar, null);
 
         // Start evaluation on the device
-        modelFunc.Evaluate(inputDataMap, outputDataMap, device);
+        modelFunc.evaluate(inputDataMap, outputDataMap, device);
 
         // get evaluate result as dense output
         FloatVectorVector outputBuffer = new FloatVectorVector();
-        outputDataMap.getitem(outputVar).CopyVariableValueToFloat(outputVar, outputBuffer);
+        outputDataMap.getitem(outputVar).copyVariableValueToFloat(outputVar, outputBuffer);
 
 
         float[] expectedResults = {
