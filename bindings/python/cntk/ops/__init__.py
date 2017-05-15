@@ -748,13 +748,17 @@ def minus(left, right, name=''):
 @typemap
 def pow(base, exponent, name=''):
     '''
-    The output of this operation is base raised to the power of exponent. It supports broadcasting.
+    The output of this operation is the *real part* of base raised to the power of exponent. It supports broadcasting.
+    When base is a positive number this corresponds to regular exponentiation.
+    When base is a negative number the result is the real part of exponentiation 
+    in the complex domain i.e. pow(abs(`base`), `exponent`) * cos(`exponent` * pi)
+    This produces the expected values when `exponent` is integral (e.g. pow(-2,3) = -8)
 
     Example:
-        >>> C.pow([1, 2, 3], [3, 2, 1]).eval()
-        array([ 1.,  4.,  3.], dtype=float32)
+        >>> C.pow([1, 2, -2], [3, -2, 3]).eval()
+        array([ 1.  ,  0.25, -8.  ], dtype=float32)
 
-        >>> C.pow([[0.5,2],[4,1]], -2).eval()
+        >>> C.pow([[0.5, 2],[4, 1]], -2).eval()
         array([[ 4.    ,  0.25  ],
                [ 0.0625,  1.    ]], dtype=float32)
 

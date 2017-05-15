@@ -530,3 +530,29 @@ def test_op_pow(base, exponent, device_id, precision):
     _test_binary_op(precision, device_id, pow,
                     base, exponent,
                     AA([expected_forward]), expected_backward)
+
+
+NEGATIVE_TENSOR_PAIRS = [
+    ([-1, -2, -3, -4], [2, -3, 3, -2]),
+    ([-0.1, -0.2, -0.3, -0.4], [2, -3, 3, -2]),
+    ([-0.1, -0.2, -0.3, -0.4], [0.2, -0.3, 0.3, -0.2]),
+    ([-1, -2, -3, -4], [0.2, -0.3, 0.3, -0.2]),
+]
+
+
+@pytest.mark.parametrize("base, exponent", NEGATIVE_TENSOR_PAIRS)
+def test_op_pow_negative_base(base, exponent, device_id, precision):
+    dt =  PRECISION_TO_TYPE[precision]
+    base = AA(base,dtype=dt)
+    exponent = AA(exponent,dtype=dt)
+    expected_forward = np.abs(base) ** exponent * np.cos(exponent*np.pi)
+
+    expected_backward = {
+            'left_arg':  [-exponent * np.abs(base)**(exponent-1) * np.cos(exponent * np.pi)],
+            'right_arg': [(np.abs(base) ** exponent) * (np.log(np.abs(base)) * np.cos(exponent*np.pi) - np.pi * np.sin(exponent*np.pi))]
+        }
+
+    from .. import pow
+    _test_binary_op(precision, device_id, pow,
+                    base, exponent,
+                    AA([expected_forward]), expected_backward)

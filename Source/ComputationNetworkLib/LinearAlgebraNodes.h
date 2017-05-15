@@ -165,6 +165,7 @@ public:
         auto gradient = GradientTensorFor(rank, fr);
         auto inputGradient = InputRef(inputIndex).GradientTensorFor(rank, fr.AllowBroadcast());
         auto base = InputRef(0).ValueTensorFor(rank, fr.AllowBroadcast());
+        auto exponent = InputRef(1).ValueTensorFor(rank, fr.AllowBroadcast());
 
         // if reduction then mask the respective input(s) (zero out the gaps)
         if (Input(inputIndex)->ReducesInTimeWrt(shared_from_this()))
@@ -175,15 +176,15 @@ public:
 
         if (inputIndex == 0)
         {
-            auto exponent = InputRef(1).ValueTensorFor(rank, fr.AllowBroadcast());
             // d/dx x**y = y * x**(y-1)
+            // d/dx (-x)**y * cos(y * pi) = - y * (-x)**(y-1) * cos(y * pi)
             inputGradient.AddElementwiseProductWithPowBaseDerivativeOf(gradient, base, exponent);
         }
         else
         {
-            auto result = ValueTensorFor(rank, fr);
             // d/dy x**y = ln(x) * x**y
-            inputGradient.AddElementwiseProductWithPowExponentDerivativeOf(gradient, result, base);
+            // d/dy (-x)**y * cos(y * pi) = (-x)**y * (ln(x) * cos(y * pi) - pi * sin(y * pi))
+            inputGradient.AddElementwiseProductWithPowExponentDerivativeOf(gradient, base, exponent);
         }
     }
 };

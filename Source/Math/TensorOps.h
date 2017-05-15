@@ -9,6 +9,9 @@
 
 #include "Basics.h"
 #include "CommonMatrix.h"
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif 
 
 #pragma push_macro("TENSOR_OPS_DECL")
 #ifndef TENSOR_OPS_DECL // to make these accessible to CUDA kernels, say '#define TENSOR_OPS_DECL __device__ __host__'
@@ -63,16 +66,24 @@ OverloadUnaryMathFns(log1p);
         return x(f, y);                  \
     }
 
-// Because we compile with fast math the following produces nan for negative numbers raised to integer power.
-// Is there an nvcc pragma to disable fast math temporarily? Something like 
-// #pragma fast-math push
-// #pragma fast-math off
-// OverloadBinaryMathFns(pow);
-// #pragma fast-math pop
-OverloadBinaryMathFns(pow);
-
+OverloadBinaryMathFns(fmod);
 
 #pragma pop_macro("OverloadBinaryMathFns")
+
+//real part of complex pow
+template<typename T>
+DECL T realcpow(T x, T y)
+{
+    static constexpr auto pi = T(M_PI);
+    if (y == 0)
+        return T(1);
+    else if (x == 0)
+        return T(0);
+    else if (x < 0)
+        return exp_(y * log_(-x)) * cos_(fmod_(y, T(2)) * pi);
+    else
+        return exp_(y * log_(x));
+}
 
 
 
@@ -248,7 +259,7 @@ DefBinaryOp(Difference, a - b);
 DefBinaryOp(ElementwiseProduct, a* b);
 DefBinaryOp(ElementwiseQuotient, ClippedQuotient(a, b));
 DefBinaryOp(LogSum, LogAdd(a, b));
-DefBinaryOp(Pow, pow_(a, b));
+DefBinaryOp(Pow, realcpow(a, b));
 DefBinaryOp(Max, a > b ? a : b);
 DefBinaryOp(Min, a < b ? a : b);
 DefBinaryOp(Equal, a == b);
@@ -290,9 +301,16 @@ DefTernaryOp(Clip, c < a ? a : (c > b ? b : c)); // Clip(min,max)(data) => a=min
 DefTernaryOp(ElementwiseProductWithLogSumDerivative, a * Sigmoid(c - b));
 DefTernaryOp(ElementwiseProductWithExpOfDiff, a * exp_(b - c));
 DefTernaryOp(ElementwiseProductWithQuotient, a * b * OpReciprocal(c));
-DefTernaryOp(ElementwiseProductWithPowExponentDerivative, a * b * OpLog(c));
-DefTernaryOp(ElementwiseProductWithPowBaseDerivative, a * c * OpPow(b, c - 1)); // Using the output of pow would be faster but it requires a quaternary op and users will likely only use pow in forward mode
 
+template<typename T>
+DECL T PowExponentDerivativeHelper(T b, T c)
+{
+    static constexpr auto pi = T(M_PI);
+    c = fmod_(c, T(2));
+    return OpLog(-b) * cos_(c * pi) - pi * sin_(c * pi);
+}
+DefTernaryOp(ElementwiseProductWithPowExponentDerivative, b >=0 ? a * OpPow(b, c) * OpLog(b) :  a * OpPow(-b, c) * PowExponentDerivativeHelper(b, c)); // Using the output of pow would be faster but it requires a quaternary op and users will likely only use pow in forward mode
+DefTernaryOp(ElementwiseProductWithPowBaseDerivative, a * c * OpPow(b, c) * OpReciprocal(b)); //same as above a quaternary op would be appropriate; note this does not simplify to OpPow(b, c-1) because of the case b < 0
 #pragma pop_macro("DefTernaryOp")
 
 }}}
