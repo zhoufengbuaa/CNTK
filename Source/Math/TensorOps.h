@@ -9,6 +9,7 @@
 
 #include "Basics.h"
 #include "CommonMatrix.h"
+#include "StrictTensorOps.h"
 
 #pragma push_macro("TENSOR_OPS_DECL")
 #ifndef TENSOR_OPS_DECL // to make these accessible to CUDA kernels, say '#define TENSOR_OPS_DECL __device__ __host__'
@@ -51,28 +52,6 @@ OverloadUnaryMathFns(floor);
 OverloadUnaryMathFns(log1p);
 
 #pragma pop_macro("OverloadUnaryMathFns")
-
-#pragma push_macro("OverloadBinaryMathFns")
-#define OverloadBinaryMathFns(x)         \
-    DECL float x##_(float f, float y)    \
-    {                                    \
-        return x##f(f, y);               \
-    }                                    \
-    DECL double x##_(double f, double y) \
-    {                                    \
-        return x(f, y);                  \
-    }
-
-// Because we compile with fast math the following produces nan for negative numbers raised to integer power.
-// Is there an nvcc pragma to disable fast math temporarily? Something like 
-// #pragma fast-math push
-// #pragma fast-math off
-// OverloadBinaryMathFns(pow);
-// #pragma fast-math pop
-OverloadBinaryMathFns(pow);
-
-
-#pragma pop_macro("OverloadBinaryMathFns")
 
 
 

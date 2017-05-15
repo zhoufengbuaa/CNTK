@@ -85,7 +85,8 @@
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateLineInfo>true</GenerateLineInfo>
-      <AdditionalCompilerOptions>/WX</AdditionalCompilerOptions>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
       <CodeGeneration>$(CudaCodeGen)</CodeGeneration>
       <FastMath>true</FastMath>
       <GPUDebugInfo>false</GPUDebugInfo>
@@ -108,10 +109,15 @@ if exist "$(CuDnnDll)" xcopy /D /Y "$(CuDnnDll)" "$(OutputPath)"
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <AdditionalOptions>/d2Zi+ %(AdditionalOptions)</AdditionalOptions>
+      <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release_NoOpt|x64'">false</TreatWarningAsError>
     </ClCompile>
     <CudaCompile>
       <HostDebugInfo>false</HostDebugInfo>
+      <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Release_NoOpt|x64'">true</GenerateRelocatableDeviceCode>
     </CudaCompile>
+    <CudaLink>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release_NoOpt|x64'">cudadevrt.lib</AdditionalDependencies>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\Include\File.h" />
@@ -186,6 +192,10 @@ if exist "$(CuDnnDll)" xcopy /D /Y "$(CuDnnDll)" "$(OutputPath)"
     <CudaCompile Include="MatrixQuantizer_kernel.cu">
       <ExcludedFromBuild>true</ExcludedFromBuild>
       <FileType>CppCode</FileType>
+    </CudaCompile>
+    <CudaCompile Include="StrictTensorOps.cu">
+      <FastMath Condition="'$(Configuration)|$(Platform)'=='Release_NoOpt|x64'">false</FastMath>
+      <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Release_NoOpt|x64'">true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

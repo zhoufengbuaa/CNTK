@@ -34,6 +34,9 @@
     <CudaCompile Include="GPURNGHandle.cu">
       <Filter>GPU</Filter>
     </CudaCompile>
+    <CudaCompile Include="StrictTensorOps.cu">
+      <Filter>GPU</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cudalattice.cpp">
