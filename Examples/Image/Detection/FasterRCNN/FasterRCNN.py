@@ -20,18 +20,15 @@ from cntk import Trainer, UnitType, load_model, user_function, Axis, input, para
 from cntk.io import MinibatchSource, ImageDeserializer, CTFDeserializer, StreamDefs, StreamDef, TraceLevel
 from cntk.io.transforms import scale
 from cntk.initializer import glorot_uniform, normal
-from cntk.layers import placeholder, Convolution, Constant, Sequential
+from cntk.layers import placeholder, Constant, Sequential
 from cntk.learners import momentum_sgd, learning_rate_schedule, momentum_schedule
 from cntk.logging import log_number_of_parameters, ProgressPrinter
 from cntk.logging.graph import find_by_name, plot
 from cntk.losses import cross_entropy_with_softmax
 from cntk.metrics import classification_error
-from utils.rpn.anchor_target_layer import AnchorTargetLayer
-from utils.rpn.proposal_layer import ProposalLayer
-from utils.rpn.proposal_target_layer import ProposalTargetLayer
 from utils.rpn.cntk_smoothL1_loss import SmoothL1Loss
-from utils.rpn.cntk_ignore_label import IgnoreLabel
 from utils.fast_rcnn.bbox_transform import bbox_transform_inv
+from utils.rpn.rpn_helpers import create_rpn, create_proposal_target_layer
 from config import cfg
 from cntk_helpers import visualizeResultsFaster
 
@@ -201,79 +198,6 @@ def clone_model(base_model, from_node_names, to_node_names, clone_method):
     cloned_net = combine(to_nodes).clone(clone_method, input_placeholders)
     return cloned_net
 
-def convert_gt_boxes(gt_boxes, im_width, name="converted_gt_boxes"):
-    # For CNTK: convert and scale gt_box coords from x, y, w, h relative to x1, y1, x2, y2 absolute
-    roi_xy1 = slice(gt_boxes, 1, 0, 2)
-    roi_wh = slice(gt_boxes, 1, 2, 4)
-    roi_label = slice(gt_boxes, 1, 4, 5)
-    roi_xy2 = plus(roi_xy1, roi_wh)
-    roi_xyxy = splice(roi_xy1, roi_xy2, axis=1)
-    scaled_roi_xyxy = element_times(roi_xyxy, (1.0 * im_width))
-    scaled_gt_boxes = splice(scaled_roi_xyxy, roi_label, axis=1)
-
-    return alias(scaled_gt_boxes, name=name)
-
-def create_rpn(conv_out, scaled_gt_boxes, train=True):
-    # RPN network
-    # init = 'normal', initValueScale = 0.01, initBias = 0.1
-    rpn_conv_3x3 = Convolution((3, 3), 256, activation=relu, pad=True, strides=1,
-                                init = normal(scale=0.01), init_bias=0.1)(conv_out)
-    rpn_cls_score = Convolution((1, 1), 18, activation=None, name="rpn_cls_score",
-                                init = normal(scale=0.01), init_bias=0.1)(rpn_conv_3x3)  # 2(bg/fg)  * 9(anchors)
-    rpn_bbox_pred = Convolution((1, 1), 36, activation=None, name="rpn_bbox_pred",
-                                init = normal(scale=0.01), init_bias=0.1)(rpn_conv_3x3)  # 4(coords) * 9(anchors)
-
-    # RPN targets
-    # Comment: rpn_cls_score is only passed   vvv   to get width and height of the conv feature map ...
-    atl = user_function(AnchorTargetLayer(rpn_cls_score, scaled_gt_boxes, im_info=im_info, cfg=cfg))
-    rpn_labels = atl.outputs[0]
-    rpn_bbox_targets = atl.outputs[1]
-    rpn_bbox_inside_weights = atl.outputs[2]
-
-    # getting rpn class scores and rpn targets into the correct shape for ce
-    # i.e., (2, 33k), where each group of two corresponds to a (bg, fg) pair for score or target
-    # Reshape scores
-    num_anchors = int(rpn_cls_score.shape[0] / 2)
-    num_predictions = int(np.prod(rpn_cls_score.shape) / 2)
-    bg_scores = slice(rpn_cls_score, 0, 0, num_anchors)
-    fg_scores = slice(rpn_cls_score, 0, num_anchors, num_anchors * 2)
-    bg_scores_rshp = reshape(bg_scores, (1, num_predictions))
-    fg_scores_rshp = reshape(fg_scores, (1, num_predictions))
-    rpn_cls_score_rshp = splice(bg_scores_rshp, fg_scores_rshp, axis=0)
-    rpn_cls_prob = softmax(rpn_cls_score_rshp, axis=0, name="objness_softmax")
-    # Reshape targets
-    rpn_labels_rshp = reshape(rpn_labels, (1, num_predictions))
-
-    # Ignore label predictions for the 'ignore label', i.e. set target and prediction to 0 --> needs to be softmaxed before
-    ignore = user_function(IgnoreLabel(rpn_cls_prob, rpn_labels_rshp, ignore_label=-1))
-    rpn_cls_prob_ignore = ignore.outputs[0]
-    fg_targets = ignore.outputs[1]
-    bg_targets = 1 - fg_targets
-    rpn_labels_ignore = splice(bg_targets, fg_targets, axis=0)
-
-    # RPN losses
-    rpn_loss_cls = cross_entropy_with_softmax(rpn_cls_prob_ignore, rpn_labels_ignore, axis=0)
-    rpn_loss_bbox = user_function(SmoothL1Loss(rpn_bbox_pred, rpn_bbox_targets, rpn_bbox_inside_weights))
-    rpn_losses = plus(reduce_sum(rpn_loss_cls), reduce_sum(rpn_loss_bbox), name="rpn_losses")
-
-    # ROI proposal
-    # - ProposalLayer:
-    #    Outputs object detection proposals by applying estimated bounding-box
-    #    transformations to a set of regular boxes (called "anchors").
-    # - ProposalTargetLayer:
-    #    Assign object detection proposals to ground-truth targets. Produces proposal
-    #    classification labels and bounding-box regression targets.
-    #  + adds gt_boxes to candidates and samples fg and bg rois for training
-
-    # reshape predictions per (H, W) position to (2,9) ( == (bg, fg) per anchor)
-    shp = (2, num_anchors,) + rpn_cls_score.shape[-2:]
-    rpn_cls_prob_reshape = reshape(rpn_cls_prob, shp)
-
-    rpn_rois_raw = user_function(ProposalLayer(rpn_cls_prob_reshape, rpn_bbox_pred, im_info=im_info, cfg=cfg))
-    rpn_rois = alias(rpn_rois_raw, name='rpn_rois')
-
-    return rpn_rois, rpn_losses
-
 def create_fast_rcnn_predictor(conv_out, rois, fc_layers):
     # for the roipooling layer we convert and scale roi coords back to x, y, w, h relative from x1, y1, x2, y2 absolute
     roi_xy1 = slice(rois, 1, 0, 2)
@@ -288,13 +212,11 @@ def create_fast_rcnn_predictor(conv_out, rois, fc_layers):
 
     # prediction head
     W_pred = parameter(shape=(4096, num_classes), init=normal(scale=0.01))
-    #W_pred = parameter(shape=(4096, num_classes), init=glorot_uniform())
     b_pred = parameter(shape=num_classes, init=0)
     cls_score = plus(times(fc_out, W_pred), b_pred, name='cls_score')
 
     # regression head
     W_regr = parameter(shape=(4096, num_classes*4), init=normal(scale=0.01))
-    #W_regr = parameter(shape=(4096, num_classes * 4), init=glorot_uniform())
     b_regr = parameter(shape=num_classes*4, init=0)
     bbox_pred = plus(times(fc_out, W_regr), b_regr, name='bbox_regr')
 
@@ -312,13 +234,9 @@ def faster_rcnn_predictor(features, scaled_gt_boxes):
     conv_out = conv_layers(feat_norm)
 
     # RPN
-    rpn_rois, rpn_losses = create_rpn(conv_out, scaled_gt_boxes)
-
-    ptl = user_function(ProposalTargetLayer(rpn_rois, scaled_gt_boxes, num_classes=num_classes, im_info=im_info, cfg=cfg))
-    rois = alias(ptl.outputs[0], name='rpn_target_rois')
-    label_targets = alias(ptl.outputs[1], name='label_targets')
-    bbox_targets = alias(ptl.outputs[2], name='bbox_targets')
-    bbox_inside_weights = alias(ptl.outputs[3], name='bbox_inside_w')
+    rpn_rois, rpn_losses = create_rpn(conv_out, scaled_gt_boxes, im_info, cfg)
+    rois, label_targets, bbox_targets, bbox_inside_weights = \
+        create_proposal_target_layer(rpn_rois, scaled_gt_boxes, num_classes=num_classes, im_info=im_info, cfg=cfg)
 
     # Fast RCNN
     cls_score, bbox_pred = create_fast_rcnn_predictor(conv_out, rois, fc_layers)
@@ -366,6 +284,18 @@ def mem_used():
     import psutil
     process = psutil.Process(os.getpid())
     return process.memory_info().rss
+
+def convert_gt_boxes(gt_boxes, im_width, name="converted_gt_boxes"):
+    # For CNTK: convert and scale gt_box coords from x, y, w, h relative to x1, y1, x2, y2 absolute
+    roi_xy1 = slice(gt_boxes, 1, 0, 2)
+    roi_wh = slice(gt_boxes, 1, 2, 4)
+    roi_label = slice(gt_boxes, 1, 4, 5)
+    roi_xy2 = plus(roi_xy1, roi_wh)
+    roi_xyxy = splice(roi_xy1, roi_xy2, axis=1)
+    scaled_roi_xyxy = element_times(roi_xyxy, (1.0 * im_width))
+    scaled_gt_boxes = splice(scaled_roi_xyxy, roi_label, axis=1)
+
+    return alias(scaled_gt_boxes, name=name)
 
 def train_model(image_input, roi_input, loss, pred_error,
                 lr_schedule, mm_schedule, l2_reg_weight, epochs_to_train):
@@ -511,7 +441,7 @@ def train_faster_rcnn_alternating(debug_output=False):
         #conv_out = conv_layers(image_input)
 
         # RPN
-        rpn_rois, rpn_losses = create_rpn(conv_out, scaled_gt_boxes)
+        rpn_rois, rpn_losses = create_rpn(conv_out, scaled_gt_boxes, im_info, cfg)
 
         stage1_rpn_network = combine([rpn_rois, rpn_losses])
         if debug_output: plot(stage1_rpn_network, os.path.join(output_path, "graph_frcn_train_stage1a_rpn." + graph_type))
@@ -556,18 +486,15 @@ def train_faster_rcnn_alternating(debug_output=False):
         rpn_rois = rpn_net.outputs[0]
         rpn_losses = rpn_net.outputs[1] # required for training rpn in stage 2
 
-        ptl = user_function(ProposalTargetLayer(rpn_rois, scaled_gt_boxes, num_classes=num_classes, im_info=im_info, cfg=cfg))
-        rois = alias(ptl.outputs[0], name='rpn_target_rois')
-        labels = alias(ptl.outputs[1], name='label_targets')
-        bbox_targets = alias(ptl.outputs[2], name='bbox_targets')
-        bbox_inside_weights = alias(ptl.outputs[3], name='bbox_inside_w')
+        rois, label_targets, bbox_targets, bbox_inside_weights = \
+            create_proposal_target_layer(rpn_rois, scaled_gt_boxes, num_classes=num_classes, im_info=im_info, cfg=cfg)
 
         # Fast RCNN
         fc_layers = clone_model(base_model, [pool_node_name], [last_hidden_node_name], CloneMethod.clone)
         cls_score, bbox_pred = create_fast_rcnn_predictor(conv_out, rois, fc_layers)
 
         # loss functions
-        loss_cls = cross_entropy_with_softmax(cls_score, labels, axis=1)
+        loss_cls = cross_entropy_with_softmax(cls_score, label_targets, axis=1)
         loss_box = user_function(SmoothL1Loss(bbox_pred, bbox_targets, bbox_inside_weights))
         detection_losses = plus(reduce_sum(loss_cls), reduce_sum(loss_box), name="detection_losses")
 
@@ -685,10 +612,9 @@ def regress_rois(roi_proposals, roi_regression_factors, labels):
         if label > 0:
             deltas = roi_regression_factors[i:i+1,label*4:(label+1)*4]
             roi_coords = roi_proposals[i:i+1,:]
-
             regressed_rois = bbox_transform_inv(roi_coords, deltas)
-
             roi_proposals[i,:] = regressed_rois
+
     return roi_proposals
 
 # Tests a Faster R-CNN model and plots images with detected boxes
@@ -777,6 +703,7 @@ def eval_faster_rcnn_mAP(eval_model, img_map_file, roi_map_file):
             all_boxes[j][i] = \
                 np.hstack((regressed_rois, out_cls_pred[:, j])) \
                     .astype(np.float32, copy=False)
+            # TODO: calculate mAP
 
 
 # The main method trains and evaluates a Fast R-CNN model.
