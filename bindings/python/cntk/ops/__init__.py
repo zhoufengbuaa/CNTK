@@ -749,10 +749,10 @@ def minus(left, right, name=''):
 def pow(base, exponent, name=''):
     '''
     The output of this operation is the *real part* of base raised to the power of exponent. It supports broadcasting.
-    When base is a positive number this corresponds to regular exponentiation.
-    When base is a negative number the result is the real part of exponentiation 
+    When `base` is a non-negative number this corresponds to regular exponentiation.
+    When `base` is a negative number the result is the real part of exponentiation 
     in the complex domain i.e. pow(abs(`base`), `exponent`) * cos(`exponent` * pi)
-    This produces the expected values when `exponent` is integral (e.g. pow(-2,3) = -8)
+    When the `exponent` is integral, this behavior is the same as repeated multiplication (e.g. pow(-2,3) = -8)
 
     Example:
         >>> C.pow([1, 2, -2], [3, -2, 3]).eval()
