@@ -107,6 +107,7 @@ private:
         {
             SmallVector<size_t> v(3, 1);
             v[2] = inOutT[0];
+            RuntimeError("1D BatchNorm");
             return TensorShape(v);
         }
         else
@@ -114,6 +115,7 @@ private:
             SmallVector<size_t> v(std::max(inOutT.GetRank(), (size_t)3), 1);
             for (size_t i = 0; i < inOutT.GetRank(); i++)
                 v[i] = inOutT[i];
+            RuntimeError("2D BatchNorm");
             return TensorShape(v);
         }
     }
