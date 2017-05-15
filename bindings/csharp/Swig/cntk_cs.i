@@ -433,7 +433,7 @@
     public override int GetHashCode()
     {
         // Todo: the hash value in C++ is size_t, but only in in C#
-        return (int)_HashValue();
+        return (int)GetHashValue();
     }
 %}
 
