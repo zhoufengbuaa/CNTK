@@ -893,7 +893,6 @@ def test_minibatch_defined_by_labels(tmpdir):
 
     assert_data(mb_source)
 
-    import pdb; pdb.set_trace()
     tmpfile1 = _write_data(tmpdir, MBDATA_SPARSE1, '1')
     tmpfile2 = _write_data(tmpdir, MBDATA_SPARSE2, '2')
     combined_mb_source = MinibatchSource([ CTFDeserializer(tmpfile1, StreamDefs(
