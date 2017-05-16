@@ -27,6 +27,14 @@ public:
                         m_scaleBiasCuDnnT(GetScaleBiasTensor(inOutT, spatial), CuDnnTensor::GetDataType<ElemType>()),
                         m_cudnnEpsilon(CUDNN_BN_MIN_EPSILON)
     {
+       if (spatial && (inOutT.GetRank() == 1))
+       {
+           RuntimeError("1D spatial BatchNorm");
+       }
+       else if (spatial && (inOutT.GetRank() == 2))
+       {
+           RuntimeError("2D spatial BatchNorm");
+       }
     }
 
 protected:
@@ -107,7 +115,6 @@ private:
         {
             SmallVector<size_t> v(3, 1);
             v[2] = inOutT[0];
-            RuntimeError("1D BatchNorm");
             return TensorShape(v);
         }
         else
@@ -115,7 +122,6 @@ private:
             SmallVector<size_t> v(std::max(inOutT.GetRank(), (size_t)3), 1);
             for (size_t i = 0; i < inOutT.GetRank(); i++)
                 v[i] = inOutT[i];
-            RuntimeError("2D BatchNorm");
             return TensorShape(v);
         }
     }
