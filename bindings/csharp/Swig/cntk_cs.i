@@ -573,17 +573,17 @@
 
 %typemap(cscode) CNTK::NDMask %{
     public void InvalidateSection(System.Collections.Generic.IEnumerable<int> sectionOffset, NDShape sectionShape) {
-        var offsetVector = AsSizeTVector(sectionOffset);
+        var offsetVector = Helper.AsSizeTVector(sectionOffset);
         _InvalidateSection(offsetVector, sectionShape);
     }
 
     public void MarkSequenceBegin(System.Collections.Generic.IEnumerable<int> offset) {
-        var offsetVector = AsSizeTVector(offset);
+        var offsetVector = Helper.AsSizeTVector(offset);
         _MarkSequenceBegin(offsetVector);
     }
 
     public void MarkSequenceBegin(System.Collections.Generic.IEnumerable<int> offset, NDShape sectionShape) {
-        var offsetVector = AsSizeTVector(offset);
+        var offsetVector = Helper.AsSizeTVector(offset);
         _MarkSequenceBegin(offsetVector, sectionShape);
     }
 
@@ -598,23 +598,10 @@
     public NDShape Shape {
         get { return GetShape(); }
     }
-
-    private static SizeTVector AsSizeTVector(System.Collections.Generic.IEnumerable<int> input)
-    {
-        var inputVector = new SizeTVector();
-        foreach (var element in input)
-        {
-            if (element < 0)
-            {
-                throw new System.ArgumentException("The argument cannot contain a negative value");
-            }
-            inputVector.Add((uint)element);
-        }
-        return inputVector;
-    }
 %}
 
 %typemap(cscode) CNTK::Value %{
+    // Property Device
     public DeviceDescriptor Device
     {
         get
@@ -623,6 +610,7 @@
         }
     }
 
+    // Property DataType
     public DataType DataType
     {
         get
@@ -631,6 +619,7 @@
         }
     }
 
+    // Property StorageFormat
     public StorageFormat StorgeFormat
     {
         get
@@ -639,6 +628,7 @@
         }
     }
 
+    // Property Shape
     public NDShape Shape
     {
         get
@@ -647,6 +637,7 @@
         }
     }
 
+    // Property IsSparse
     public bool IsSparse
     {
         get
@@ -655,6 +646,7 @@
         }
     }
 
+    // Property IsReadOnly
     public bool IsReadOnly
     {
         get
@@ -663,6 +655,7 @@
         }
     }
 
+    // Property MaskedCount
     public int MaskedCount
     {
         get
@@ -671,17 +664,17 @@
         }
     }
 
-    // Create Value object from dense input: batch, sequence or batch of sequences.
+    // Create Value object from dense input as batch data.
     public static Value CreateBatch<T>(NDShape sampleShape, System.Collections.Generic.IEnumerable<T> batch, DeviceDescriptor device, bool readOnly = false)
     {
         if (typeof(T).Equals(typeof(float)))
         {
-            var inputVector = AsFloatVector(batch);
+            var inputVector = Helper.AsFloatVector(batch);
             return Value.CreateBatchFloat(sampleShape, inputVector, device, readOnly);
         }
         else if (typeof(T).Equals(typeof(double)))
         {
-            var inputVector = AsDoubleVector(batch);
+            var inputVector = Helper.AsDoubleVector(batch);
             return Value.CreateBatchDouble(sampleShape, inputVector, device, readOnly);
         }
         else
@@ -690,6 +683,7 @@
         }
     }
 
+    // Create Value object from dense input as sequence data.
     public static Value CreateSequence<T>(NDShape sampleShape,
                                           System.Collections.Generic.IEnumerable<T> sequence,
                                           DeviceDescriptor device,
@@ -698,6 +692,7 @@
         return CreateSequence<T>(sampleShape, sequence, true, device, readOnly);
     }
 
+    // Create Value object from dense input as sequence data with sequenceStartFlag.
     public static Value CreateSequence<T>(NDShape sampleShape,
                                           System.Collections.Generic.IEnumerable<T> sequence,
                                           bool sequenceStartFlag,
@@ -706,12 +701,12 @@
     {
         if (typeof(T).Equals(typeof(float)))
         {
-            var inputVector = AsFloatVector(sequence);
+            var inputVector = Helper.AsFloatVector(sequence);
             return Value.CreateSequenceFloat(sampleShape, inputVector, sequenceStartFlag, device, readOnly);
         }
         else if (typeof(T).Equals(typeof(double)))
         {
-            var inputVector = AsDoubleVector(sequence);
+            var inputVector = Helper.AsDoubleVector(sequence);
             return Value.CreateSequenceDouble(sampleShape, inputVector, sequenceStartFlag, device, readOnly);
         }
         else
@@ -720,6 +715,7 @@
         }
     }
 
+    // Create Value object from dense input as batch of sequences data.
     public static Value CreateBatchOfSequences<T>(NDShape sampleShape,
                                                   System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<T>> batchOfSequences,
                                                   DeviceDescriptor device,
@@ -728,6 +724,7 @@
         return Create(sampleShape, batchOfSequences, new System.Collections.Generic.List<bool>(0), device, readOnly);
     }
 
+    // Create Value object from dense input as batch of sequences data with sequenceStartFlags.
     public static Value CreateBatchOfSequences<T>(NDShape sampleShape,
                                                   System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<T>> batchOfSequences,
                                                   System.Collections.Generic.IEnumerable<bool> sequenceStartFlags,
@@ -737,19 +734,20 @@
         return Create(sampleShape, batchOfSequences, sequenceStartFlags, device, readOnly);
     }
 
+    // Create Value object from dense input as batch of sequences data with sequenceStartFlags.
     public static Value Create<T>(NDShape sampleShape,
                                   System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<T>> sequences,
                                   System.Collections.Generic.IEnumerable<bool> sequenceStartFlags,
                                   DeviceDescriptor device,
                                   bool readOnly = false)
     {
-        var seqFlags = AsBoolVector(sequenceStartFlags);
+        var seqFlags = Helper.AsBoolVector(sequenceStartFlags);
         if (typeof(T).Equals(typeof(float)))
         {
             var inputAsSequencesVector = new FloatVectorVector();
             foreach (var seq in sequences)
             {
-                var seqVector = AsFloatVector(seq);
+                var seqVector = Helper.AsFloatVector(seq);
                 // The seqVector is copied when adding to inputAsSequencesVector.
                 inputAsSequencesVector.Add(seqVector);
             }
@@ -760,7 +758,7 @@
             var inputAsSequencesVector = new DoubleVectorVector();
             foreach (var seq in sequences)
             {
-                var seqVector = AsDoubleVector(seq);
+                var seqVector = Helper.AsDoubleVector(seq);
                 inputAsSequencesVector.Add(seqVector);
             }
             return Value.CreateDenseDouble(sampleShape, inputAsSequencesVector, seqFlags, device, readOnly);
@@ -778,11 +776,11 @@
                                   DeviceDescriptor device,
                                   bool readOnly = false)
     {
-        var seqFlags = AsBoolVector(sequenceStartFlags);
+        var seqFlags = Helper.AsBoolVector(sequenceStartFlags);
         var inputSeqVector = new SizeTVectorVector();
         foreach (var seq in sequences)
         {
-            var s = AsSizeTVector(seq);
+            var s = Helper.AsSizeTVector(seq);
             inputSeqVector.Add(s);
         }
         if (typeof(T).Equals(typeof(float)))
@@ -799,10 +797,10 @@
         }
     }
 
-    // Create Value object from OneHotVector input, for 1D tensor: batch, sequence or batch of sequences
+    // Create Value object from OneHotVector input as batch data, for 1D tensor only.
     public static Value CreateBatch<T>(int dimension, System.Collections.Generic.IEnumerable<int> batch, DeviceDescriptor device, bool readOnly = false)
     {
-        var inputVector = AsSizeTVector(batch);
+        var inputVector = Helper.AsSizeTVector(batch);
         if (typeof(T).Equals(typeof(float)))
         {
             return Value.CreateBatchFloat((uint)dimension, inputVector, device, readOnly);
@@ -817,6 +815,7 @@
         }
     }
 
+    // Create Value object from OneHotVector input as sequence data, for 1D tensor only.
     public static Value CreateSequence<T>(int dimension,
                                           System.Collections.Generic.IEnumerable<int> sequence,
                                           DeviceDescriptor device,
@@ -825,13 +824,14 @@
         return CreateSequence<T>(dimension, sequence, true, device, readOnly);
     }
 
+    // Create Value object from OneHotVector input as sequence data with sequenceStartFlag, for 1D tensor only.
     public static Value CreateSequence<T>(int dimension,
                                           System.Collections.Generic.IEnumerable<int> sequence,
                                           bool sequenceStartFlag,
                                           DeviceDescriptor device,
                                           bool readOnly = false)
     {
-        var inputVector = AsSizeTVector(sequence);
+        var inputVector = Helper.AsSizeTVector(sequence);
         if (typeof(T).Equals(typeof(float)))
         {
             return Value.CreateSequenceFloat((uint)dimension, inputVector, sequenceStartFlag, device, readOnly);
@@ -846,6 +846,7 @@
         }
     }
 
+    // Create Value object from OneHotVector input as batch of sequences data, for 1D tensor only.
     public static Value CreateBatchOfSequences<T>(int dimension,
                                                   System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<int>> batchOfSequences,
                                                   DeviceDescriptor device,
@@ -854,6 +855,7 @@
         return Create<T>(dimension, batchOfSequences, new System.Collections.Generic.List<bool>(0), device, readOnly);
     }
 
+    // Create Value object from OneHotVector input as batch of sequences data with sequenceStratFlags, for 1D tensor only.
     public static Value CreateBatchOfSequences<T>(int dimension,
                                                   System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<int>> batchOfSequences,
                                                   System.Collections.Generic.IEnumerable<bool> sequenceStartFlags,
@@ -863,17 +865,18 @@
         return Create<T>(dimension, batchOfSequences, sequenceStartFlags, device, readOnly);
     }
 
+    // Create Value object from OneHotVector input as batch of sequences data with sequenceStratFlags, for 1D tensor only.
     public static Value Create<T>(int dimension,
                                   System.Collections.Generic.IEnumerable<System.Collections.Generic.IEnumerable<int>> sequences,
                                   System.Collections.Generic.IEnumerable<bool> sequenceStartFlags,
                                   DeviceDescriptor device,
                                   bool readOnly = false)
     {
-        var seqFlags = AsBoolVector(sequenceStartFlags);
+        var seqFlags = Helper.AsBoolVector(sequenceStartFlags);
         var inputSeqVector = new SizeTVectorVector();
         foreach (var seq in sequences)
         {
-            var s = AsSizeTVector(seq);
+            var s = Helper.AsSizeTVector(seq);
             inputSeqVector.Add(s);
         }
         if (typeof(T).Equals(typeof(float)))
@@ -890,7 +893,7 @@
         }
     }
 
-    // Create Value object from sparse input, for N-dimensional tensor. Only CreateSequence() for now.
+    // Create Value object from sparse input as sequence data with sequenceStartFlag, for N-dimensional tensor. Only CreateSequence() for now.
     public static Value CreateSequence<T>(NDShape sampleShape, int sequenceLength,
                                           int[] colStarts, int[] rowIndices, T[] nonZeroValues,
                                           bool sequenceStartFlag,
@@ -921,6 +924,7 @@
         }
     }
 
+    // Create Value object from sparse input as sequence data, for N-dimensional tensor. Only CreateSequence() for now.
     public static Value CreateSequence<T>(NDShape sampleShape, int sequenceLength,
                                           int[] colStarts, int[] rowIndices, T[] nonZeroValues,
                                           DeviceDescriptor device,
@@ -929,7 +933,7 @@
         return Value.CreateSequence<T>(sampleShape, sequenceLength, colStarts, rowIndices, nonZeroValues, true, device, readOnly);
     }
 
-    // Create Value object from sparse input, for 1D tensor. Only CreateSequence() for now.
+    // Create Value object from sparse input as sequence data with sequenceStartFlag, for 1D tensor. Only CreateSequence() for now.
     public static Value CreateSequence<T>(int dimension, int sequenceLength,
                                           int[] colStarts, int[] rowIndices, T[] nonZeroValues,
                                           bool sequenceStartFlag,
@@ -960,6 +964,7 @@
         }
     }
 
+    // Create Value object from sparse input as sequence data, for 1D tensor. Only CreateSequence() for now.
     public static Value CreateSequence<T>(int dimension, int sequenceLength,
                                           int[] colStarts, int[] rowIndices, T[] nonZeroValues,
                                           DeviceDescriptor device,
@@ -968,7 +973,7 @@
         return Value.CreateSequence<T>(dimension, sequenceLength, colStarts, rowIndices, nonZeroValues, true, device, readOnly);
     }
 
-    // Create value object from NDArrayView
+    // Create Value object from NDArrayViews.
     public static Value Create(NDShape sampleShape,
                                System.Collections.Generic.IEnumerable<NDArrayView> sequences,
                                DeviceDescriptor device,
@@ -977,6 +982,7 @@
         return Create(sampleShape, sequences, new System.Collections.Generic.List<bool>(0), device, readOnly);
     }
 
+    // Create Value object from NDArrayViews with sequenceStartFlags
     public static Value Create(NDShape sampleShape,
                                System.Collections.Generic.IEnumerable<NDArrayView> sequences,
                                System.Collections.Generic.IEnumerable<bool> sequenceStartFlags,
@@ -988,7 +994,7 @@
         {
             seqVector.Add(element);
         }
-        var startFlags = AsBoolVector(sequenceStartFlags);
+        var startFlags = Helper.AsBoolVector(sequenceStartFlags);
         return Create(sampleShape, seqVector, startFlags, device, false);
     }
 
@@ -1154,65 +1160,7 @@
         return;
     }
 
-    private static FloatVector AsFloatVector<T>(System.Collections.Generic.IEnumerable<T> input)
-    {
-        if (typeof(T).Equals(typeof(float)))
-        {
-            var inputVector = new FloatVector();
-            System.Collections.Generic.IEnumerable<float> inputInType = input as System.Collections.Generic.IEnumerable<float>;
-            if (inputInType == null)
-                throw new System.ArgumentNullException("The parameter cannot be cast as IEnumerable<float>.");
-            foreach (var element in inputInType)
-            {
-                inputVector.Add(element);
-            }
-            return inputVector;
-        }
-        else
-        {
-            throw new System.ArgumentException("The data type " + typeof(T).ToString() + " is not supported. Only float or double is supported by CNTK.");
-        }
-    }
 
-    private static DoubleVector AsDoubleVector<T>(System.Collections.Generic.IEnumerable<T> input)
-    {
-        if (typeof(T).Equals(typeof(double)))
-        {
-            var inputVector = new DoubleVector();
-            System.Collections.Generic.IEnumerable<double> inputInType = input as System.Collections.Generic.IEnumerable<double>;
-            if (inputInType == null)
-                throw new System.ArgumentNullException("The parameter cannot be cast as IEnumerable<double>.");
-            foreach (var element in inputInType)
-            {
-                inputVector.Add(element);
-            }
-            return inputVector;
-        }
-        else
-        {
-            throw new System.ArgumentException("The data type " + typeof(T).ToString() + " is not supported. Only float or double is supported by CNTK.");
-        }
-    }
-
-    private static SizeTVector AsSizeTVector(System.Collections.Generic.IEnumerable<int> input)
-    {
-        var inputVector = new SizeTVector();
-        foreach (var element in input)
-        {
-            inputVector.Add((uint)element);
-        }
-        return inputVector;
-    }
-
-    private static BoolVector AsBoolVector(System.Collections.Generic.IEnumerable<bool> input)
-    {
-        var inputVector = new BoolVector();
-        foreach (var element in input)
-        {
-            inputVector.Add(element);
-        }
-        return inputVector;
-    }
 %}
 
 %typemap(cscode) CNTK::NDArrayView %{
@@ -1298,25 +1246,11 @@
 
     public NDArrayView SliceView(System.Collections.Generic.IEnumerable<int> startOffset, System.Collections.Generic.IEnumerable<int> extent, bool readOnly = false)
     {
-        var startOffsetVector = AsSizeTVector(startOffset);
+        var startOffsetVector = Helper.AsSizeTVector(startOffset);
 
-        var extentVector = AsSizeTVector(extent);
+        var extentVector = Helper.AsSizeTVector(extent);
 
         return _SliceView(startOffsetVector, extentVector, readOnly);
-    }
-
-    private static SizeTVector AsSizeTVector(System.Collections.Generic.IEnumerable<int> input)
-    {
-        var inputVector = new SizeTVector();
-        foreach (var element in input)
-        {
-            if (element < 0)
-            {
-                throw new System.ArgumentException("The argument cannot contain a negative value");
-            }
-            inputVector.Add((uint)element);
-        }
-        return inputVector;
     }
 %}
 
