@@ -9,21 +9,26 @@
 
 // C# specific extenstion
 %typemap(cscode) CNTK::DeviceDescriptor %{
+
+    // Property Id.
     public int Id
     {
         get { return (int)GetId(); }
     }
 
+    // Property Type.
     public DeviceKind Type
     {
         get { return GetDeviceType(); }
     }
 
+    // Property CPUDevice.
     public static DeviceDescriptor CPUDevice
     {
         get { return GetCPUDevice(); }
     }
 
+    // Returns the GPUDevice with the specific deviceId.
     public static DeviceDescriptor GPUDevice(int deviceId)
     {
         if (deviceId < 0)
@@ -33,6 +38,7 @@
         return GPUDevice((uint)deviceId);
     }
 
+    // Gets all devices.
     public static System.Collections.Generic.IList<DeviceDescriptor> AllDevices()
     {
         var deviceVector = GetAllDevices();
@@ -43,6 +49,7 @@
         return deviceList;
     }
 
+    // Value equality.
     public override bool Equals(System.Object obj)
     {
         // If parameter is null return false.
@@ -62,6 +69,7 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Value equality.
     public bool Equals(DeviceDescriptor p)
     {
         // If parameter is null return false:
@@ -74,11 +82,13 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Returns hash code value.
     public override int GetHashCode()
     {
         return this.GetDeviceType().GetHashCode();
     }
 
+    // Set devices to be excluded.
     public static void SetExcludedDevices(System.Collections.Generic.IEnumerable<DeviceDescriptor> excluded)
     {
         var excludeVector = new DeviceDescriptorVector();
@@ -92,6 +102,8 @@
 
 
 %typemap(cscode) CNTK::Axis %{
+
+    // Property Name.
     public string Name
     {
         get 
@@ -100,6 +112,7 @@
         }
     }
 
+    // Property IsStatic.
     public bool IsStatic
     {
         get 
@@ -108,6 +121,7 @@
         }
     }
 
+    // Property IsDynamic.
     public bool IsDynamic
     {
         get 
@@ -116,6 +130,7 @@
         }
     }
 
+    // Property IsOrdered.
     public bool IsOrdered
     {
         get 
@@ -124,6 +139,7 @@
         }
     }
 
+    // Value equality.
     public override bool Equals(System.Object obj)
     {
         // If parameter is null return false.
@@ -143,6 +159,7 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Value equality.
     public bool Equals(Axis p)
     {
         // If parameter is null return false:
@@ -155,6 +172,7 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Returns hash code value.
     public override int GetHashCode()
     {
         if (this.IsDynamicAxis())
@@ -169,11 +187,8 @@
 %}
 
 %typemap(cscode) CNTK::Function %{
-    public static Function Load(byte[] modelBuffer, DeviceDescriptor computeDevice)
-    {
-        return Load(modelBuffer, (uint)modelBuffer.Length, computeDevice);
-    }
 
+    // Property Name.
     public string Name
     {
         get 
@@ -182,6 +197,7 @@
         }
     }
 
+    // Property Uid.
     public string Uid
     {
         get 
@@ -190,11 +206,13 @@
         }
     }
 
+    // Property RootFunction.
     public Function RootFunction
     {
         get { return GetRootFunction(); }
     }
 
+    // Property Outputs
     public System.Collections.Generic.IList<Variable> Outputs
     {
         get {
@@ -207,31 +225,37 @@
         }
     }
 
+    // Property Output.
     public Variable Output
     {
         get { return GetOutput(); }
     }
 
+    // Property OpName.
     public string OpName
     {
         get { return GetOpName(); }
     }
 
+    // Property IsComposite.
     public bool IsComposite
     {
         get { return _IsComposite(); }
     }
 
+    // Property IsPrimitive.
     public bool IsPrimitive
     {
         get { return _IsPrimitive(); }
     }
 
+    // Property IsBlock.
     public bool IsBlock
     {
         get { return _IsBlock(); }
     }
 
+    // Property Arguments.
     public System.Collections.Generic.IList<Variable> Arguments
     {
         get {
@@ -244,6 +268,7 @@
         }
     }
 
+    // Property Inputs.
     public System.Collections.Generic.IList<Variable> Inputs
     {
         get {
@@ -256,37 +281,19 @@
         }
     }
 
-    public static Function Combine(System.Collections.Generic.IEnumerable<Variable> operands)
-    {
-        var varVect = new VariableVector();
-        foreach (var v in operands)
-        {
-            varVect.Add(v);
-        }
-        return CNTKLib.Combine(varVect);
-    }
-
-    public static Function AsComposite(Function rootFunction, string name = "")
-    {
-        return CNTKLib.AsComposite(rootFunction, name);
-    }
-
-    public static Function Alias(Variable operand, string name = "")
-    {
-        return CNTKLib.Alias(operand, name);
-    }
-
-    // For C# Eval, default ParameterCloningMethod is share.
+    // Creates a new cloned function instance. For C# Eval, default ParameterCloningMethod is share.
     public Function Clone(ParameterCloningMethod parameterCloneMethod = ParameterCloningMethod.Share)
     {
         return _Clone(ParameterCloningMethod.Share);
     }
 
+    // Evaluates the Function using provided inputs.
     public void Evaluate(System.Collections.Generic.IDictionary<Variable, Value> inputs, System.Collections.Generic.IDictionary<Variable, Value> outputs, DeviceDescriptor computeDevice)
     {
         Evaluate(inputs, outputs, false, computeDevice);
     }
 
+    // Evaluates the Function using provided inputs.
     public void Evaluate(System.Collections.Generic.IDictionary<Variable, Value> inputs, System.Collections.Generic.IDictionary<Variable, Value> outputs, bool createPersistentOutputValues, DeviceDescriptor computeDevice)
     {
         // Evaluate the rootFunction.
@@ -302,7 +309,7 @@
             outMap.Add(p.Key, p.Value);
         }
 
-        Evaluate(inMap, outMap, computeDevice);
+        _Evaluate(inMap, outMap, computeDevice);
 
         foreach (var p in outMap)
         {
@@ -318,6 +325,7 @@
         }
     }
 
+    // Finds all functions inside this Functions having the specified name.
     public System.Collections.Generic.IList<Function> FindAllWithName(string name, bool nestedSearchInsideBlockFunction = false)
     {
         var funcPtrVector = _FindAllWithName(name, nestedSearchInsideBlockFunction);
@@ -329,29 +337,70 @@
         }
         return funcPtrList;
     }
+
+    // Loads a model from file.
+    public static Function Load(string filepath, DeviceDescriptor computeDevice)
+    {
+        return _Load(filepath, computeDevice);
+    }
+
+    // Loads a model from memory buffer.
+    public static Function Load(byte[] modelBuffer, DeviceDescriptor computeDevice)
+    {
+        return _Load(modelBuffer, (uint)modelBuffer.Length, computeDevice);
+    }
+
+    // Creates a new Function from specified operands.
+    public static Function Combine(System.Collections.Generic.IEnumerable<Variable> operands)
+    {
+        var varVect = new VariableVector();
+        foreach (var v in operands)
+        {
+            varVect.Add(v);
+        }
+        return CNTKLib.Combine(varVect);
+    }
+
+    // Creates a composite function from the rootFunction.
+    public static Function AsComposite(Function rootFunction, string name = "")
+    {
+        return CNTKLib.AsComposite(rootFunction, name);
+    }
+
+    // Create a new Function which is the alias of operand.
+    public static Function Alias(Variable operand, string name = "")
+    {
+        return CNTKLib.Alias(operand, name);
+    }
 %}
 
 %typemap(cscode) CNTK::Variable %{
+
+    // Property Shape.
     public NDShape Shape
     {
         get { return GetShape(); }
     }
 
+    // Property Name.
     public string Name
     {
         get { return GetName(); }
     }
 
+    // Property Kind.
     public VariableKind Kind
     {
         get { return GetVariableKind(); }
     }
 
+    // Property DataType.
     public DataType DataType
     {
         get { return GetDataType(); }
     }
 
+    // Property DynamicAxes.
     public System.Collections.Generic.IList<Axis> DynamicAxes
     {
         get {
@@ -364,41 +413,49 @@
         }
     }
 
+    // Property IsSparse.
     public bool IsSparse
     {
         get { return _IsSparse(); }
     }
 
+    // Property IsInput.
     public bool IsInput
     {
         get { return _IsInput(); }
     }
 
+    // Property IsOutput.
     public bool IsOutput
     {
         get { return _IsOutput(); }
     }
 
+    // Property IsParameter.
     public bool IsParameter
     {
         get { return _IsParameter(); }
     }
 
+    // Property IsConstant.
     public bool IsConstant
     {
         get { return _IsConstant(); }
     }
 
+    // Property IsPlaceholder.
     public bool IsPlaceholder
     {
         get { return _IsPlaceholder(); }
     }
 
+    // Property Owner.
     public Function Owner
     {
         get { return GetOwner(); }
     }
 
+    // Value equality.
     public override bool Equals(System.Object obj)
     {
         // If parameter is null return false.
@@ -418,6 +475,7 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Value equality.
     public bool Equals(Variable p)
     {
         // If parameter is null return false:
@@ -430,6 +488,7 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Returns hash code value.
     public override int GetHashCode()
     {
         // Todo: the hash value in C++ is size_t, but only in in C#
@@ -438,6 +497,7 @@
 %}
 
 %typemap(cscode) CNTK::NDShape %{
+
     public NDShape(int numAxes, int dimension) : this((uint)numAxes, (uint)dimension)
     {
         if (numAxes < 0 || dimension < 0)
@@ -454,11 +514,13 @@
         }
     }
 
+    // Property Rank.
     public int Rank
     {
         get { return (int)GetRank(); }
     }
 
+    // Property Dimensions.
     public System.Collections.Generic.IList<int> Dimensions
     {
         get
@@ -473,31 +535,37 @@
         }
     }
 
+    // Property IsUnknown.
     public bool IsUnknown 
     {
         get { return _IsUnknown(); }
     }
 
+    // Property HasInferredDimension.
     public bool HasInferredDimension
     {
         get { return _HasInferredDimension(); }
     }
 
+    // Property HasFreeDimension.
     public bool HasFreeDimension
     {
         get { return _HasFreeDimension(); }
     }
 
+    // Property TotalSize.
     public int TotalSize
     {
         get { return (int)GetTotalSize(); }
     }
 
+    // Indexer operator
     public int this[int key]
     {
         get { return (int)GetDimensionSize((uint)key); }
     }
 
+    // Returns a subshape.
     public NDShape SubShape(int beginAxisId, int endAxisId)
     {
         if (beginAxisId < 0 || endAxisId < 0)
@@ -507,6 +575,7 @@
         return SubShape((uint)beginAxisId, (uint)endAxisId);
     }
 
+    // Returns a subshape.
     public NDShape SubShape(int beginAxisId)
     {
         if (beginAxisId < 0)
@@ -516,6 +585,7 @@
         return SubShape((uint)beginAxisId);
     }
 
+    // Creates a new NDShape.
     public static NDShape CreateNDShape(System.Collections.Generic.IEnumerable<int> dimensions)
     {
         var dimVector = new SizeTVector();
@@ -530,6 +600,7 @@
         return new NDShape(dimVector);
     }
 
+    // Value equality.
     public override bool Equals(System.Object obj)
     {
         // If parameter is null return false.
@@ -549,6 +620,7 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Value Equality.
     public bool Equals(NDShape p)
     {
         // If parameter is null return false:
@@ -561,46 +633,56 @@
         return CNTKLib.AreEqual(this, p);
     }
 
+    // Returns hash code value.
     public override int GetHashCode()
     {
         //Todo: another hash function??
         return this.GetDimensions().GetHashCode();
     }
 
+    // Constants
     public static readonly int InferredDimension = -1;
     public static readonly int FreeDimension = -3;
 %}
 
 %typemap(cscode) CNTK::NDMask %{
+
+    // Property MaskedCount.
+    public int MaskedCount {
+        get { return (int)GetMaskedCount(); }
+    }
+
+    // Property Device.
+    public DeviceDescriptor Device {
+        get { return GetDevice(); }
+    }
+
+    // Property Shape.
+    public NDShape Shape {
+        get { return GetShape(); }
+    }
+
+    // Invidates a section of a NDShape.
     public void InvalidateSection(System.Collections.Generic.IEnumerable<int> sectionOffset, NDShape sectionShape) {
         var offsetVector = Helper.AsSizeTVector(sectionOffset);
         _InvalidateSection(offsetVector, sectionShape);
     }
 
+    // Marks sequence begin.
     public void MarkSequenceBegin(System.Collections.Generic.IEnumerable<int> offset) {
         var offsetVector = Helper.AsSizeTVector(offset);
         _MarkSequenceBegin(offsetVector);
     }
 
+    // Marks sequence begins in a NDShape.
     public void MarkSequenceBegin(System.Collections.Generic.IEnumerable<int> offset, NDShape sectionShape) {
         var offsetVector = Helper.AsSizeTVector(offset);
         _MarkSequenceBegin(offsetVector, sectionShape);
     }
-
-    public int MaskedCount {
-        get { return (int)GetMaskedCount(); }
-    }
-
-    public DeviceDescriptor Device {
-        get { return GetDevice(); }
-    }
-
-    public NDShape Shape {
-        get { return GetShape(); }
-    }
 %}
 
 %typemap(cscode) CNTK::Value %{
+
     // Property Device
     public DeviceDescriptor Device
     {
@@ -1164,14 +1246,18 @@
 %}
 
 %typemap(cscode) CNTK::NDArrayView %{
+
+    // Constructor using float dense input.
     public NDArrayView(NDShape viewShape, float[] dataBuffer, DeviceDescriptor device, bool readOnly = false) : this(viewShape, dataBuffer, (uint)dataBuffer.Length, device, readOnly)
     {
     }
 
+    // Constructor using double dense input.
     public NDArrayView(NDShape viewShape, double[] dataBuffer, DeviceDescriptor device, bool readOnly = false) : this(viewShape, dataBuffer, (uint)dataBuffer.Length, device, readOnly)
     {
     }
 
+    // Constructor using float sparse input.
     public NDArrayView(NDShape viewShape, int[] colStarts, int[] rowIndices, float[] nonZeroValues, DeviceDescriptor device, bool readOnly = false) : this(viewShape, colStarts, rowIndices, nonZeroValues, (uint)nonZeroValues.Length, device, readOnly)
     {
         if (rowIndices.Length != nonZeroValues.Length)
@@ -1184,6 +1270,7 @@
         }
     }
 
+    // Constructor using double sparse input.
     public NDArrayView(NDShape viewShape, int[] colStarts, int[] rowIndices, double[] nonZeroValues, DeviceDescriptor device, bool readOnly = false) : this(viewShape, colStarts, rowIndices, nonZeroValues, (uint)nonZeroValues.Length, device, readOnly)
     {
         if (rowIndices.Length != nonZeroValues.Length)
@@ -1196,6 +1283,7 @@
         }
     }
 
+    // Property Device.
     public DeviceDescriptor Device
     {
         get
@@ -1204,6 +1292,7 @@
         }
     }
 
+    // Property DataType.
     public DataType DataType
     {
         get
@@ -1212,6 +1301,7 @@
         }
     }
 
+    // Property Shape.
     public NDShape Shape
     {
         get
@@ -1220,6 +1310,7 @@
         }
     }
 
+    // Property StorageFormat.
     public StorageFormat StorageFormat
     {
         get
@@ -1228,6 +1319,7 @@
         }
     }
 
+    // Property IsSparse.
     public bool IsSparse
     {
         get
@@ -1236,6 +1328,7 @@
         }
     }
 
+    // Property IsReadOnly.
     public bool IsReadOnly
     {
         get
@@ -1244,6 +1337,7 @@
         }
     }
 
+    // Returns a slice view.
     public NDArrayView SliceView(System.Collections.Generic.IEnumerable<int> startOffset, System.Collections.Generic.IEnumerable<int> extent, bool readOnly = false)
     {
         var startOffsetVector = Helper.AsSizeTVector(startOffset);

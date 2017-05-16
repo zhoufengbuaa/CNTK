@@ -25,6 +25,10 @@
 
 #ifdef SWIGCSHARP
 #define %make_private(x) %csmethodmodifiers x "private"
+%define %rename_and_make_private(namespace, method)
+  %csmethodmodifiers namespace##::##method "private";
+  %rename (_##method) namespace##::##method
+%enddef
 #endif
 
 %{
@@ -51,6 +55,8 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::Variable)
 SWIG_STD_VECTOR_ENHANCED(CNTK::Axis)
 SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 #endif //SWIGCSHARP
+
+%typemap(csclassmodifiers) AxisVector "internal class"
 
 %template(SizeTVector) std::vector<size_t>;
 %template(DoubleVector) std::vector<double>;
@@ -441,6 +447,9 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %ignore CNTK::Function::Load(const char* buffer, size_t length, const DeviceDescriptor& computeDevice = DeviceDescriptor::UseDefaultDevice());
 // Ignore exposing istream to C# for now. Todo: find a good solution to map C# System.IO.Stream to std::istream.
 %ignore CNTK::Function::Load(std::istream& inputStream, const DeviceDescriptor& computeDevice= DeviceDescriptor::UseDefaultDevice());
+
+%rename_and_make_private(CNTK::Function, Evaluate);
+%rename_and_make_private(CNTK::Function, Load);
 
 %extend CNTK::Function {
     static FunctionPtr Load(const std::wstring& filepath,
