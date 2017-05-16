@@ -325,6 +325,12 @@
         }
     }
 
+    // Find the function with the specified name.
+    public Function FindByName(string name, bool nestedSearchInsideBlockFunction = false)
+    {
+        return _FindByName(name, nestedSearchInsideBlockFunction);
+    }
+
     // Finds all functions inside this Functions having the specified name.
     public System.Collections.Generic.IList<Function> FindAllWithName(string name, bool nestedSearchInsideBlockFunction = false)
     {

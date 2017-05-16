@@ -437,17 +437,18 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %rename (GetOutputs) CNTK::Function::Outputs;
 %rename (GetArguments) CNTK::Function::Arguments;
 %rename (GetOpName) CNTK::Function::OpName;
-%rename (_Clone) CNTK::Function::Clone;
-%rename (_FindAllWithName) CNTK::Function::FindAllWithName;
 %rename (_IsComposite) CNTK::Function::IsComposite;
 %rename (_IsPrimitive) CNTK::Function::IsPrimitive;
 %rename (_IsBlock) CNTK::Function::IsBlock;
 
-// Ignore exposing istream to C# for now. Todo: find a good solution to map C# System.IO.Stream to std::istream.
-%ignore CNTK::Function::Load(std::istream& inputStream, const DeviceDescriptor& computeDevice= DeviceDescriptor::UseDefaultDevice());
-
 %rename_and_make_private(CNTK::Function, Evaluate);
 %rename_and_make_private(CNTK::Function, Load);
+%rename_and_make_private(CNTK::Function, FindByName);
+%rename_and_make_private(CNTK::Function, FindAllWithName);
+%rename_and_make_private(CNTK::Function, Clone);
+
+// Ignore exposing istream to C# for now. Todo: find a good solution to map C# System.IO.Stream to std::istream.
+%ignore CNTK::Function::Load(std::istream& inputStream, const DeviceDescriptor& computeDevice= DeviceDescriptor::UseDefaultDevice());
 
 %ignore CNTK::Function::RegisterUDFDeserializeCallback;
 %ignore CNTK::Function::GetUDFDeserializeCallback;
