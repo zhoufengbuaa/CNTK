@@ -23,6 +23,10 @@
 %include <arrays_csharp.i>
 #endif
 
+#ifdef SWIGCSHARP
+#define %make_private(x) %csmethodmodifiers x "private"
+#endif
+
 %{
     #include "CNTKLibrary.h"
     #pragma warning(disable : 4100) //unreferenced formal parameter
@@ -540,6 +544,18 @@ SWIG_STD_VECTOR_ENHANCED(CNTK::DeviceDescriptor)
 %rename (_IsSparse) CNTK::Value::IsSparse;
 %rename (_IsReadOnly) CNTK::Value::IsReadOnly;
 %rename (_MaskedCount) CNTK::Value::MaskedCount;
+
+// TODO: make the following methods also private in Java, after CreateBatch/CreateSequence/... methods are implemented there.
+#ifdef SWIGCSHARP
+%make_private(CNTK::Value::CreateDenseFloat);
+%make_private(CNTK::Value::CreateDenseDouble);
+%make_private(CNTK::Value::CreateBatchFloat);
+%make_private(CNTK::Value::CreateBatchDouble);
+%make_private(CNTK::Value::CreateSequenceFloat);
+%make_private(CNTK::Value::CreateSequenceDouble);
+%make_private(CNTK::Value::CreateOneHotFloat);
+%make_private(CNTK::Value::CreateOneHotDouble);
+#endif
 
 %include "CNTKValueExtend.i"
 
