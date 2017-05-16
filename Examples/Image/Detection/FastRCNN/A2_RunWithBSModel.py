@@ -42,7 +42,7 @@ def run_fastrcnn_with_config_file():
 
     cmdStr = cntkCmdStrPattern.format(p.cntkFilesDir, cntk_args)
     print (cmdStr)
-    pid = subprocess.Popen(cmdStr, cwd=p.cntkFilesDir)
+    pid = subprocess.Popen(cmdStr.split(" "), cwd=p.cntkFilesDir)
     pid.wait()
     print ("Time running cntk [s]: " + str((datetime.datetime.now() - tstart).total_seconds()))
 
